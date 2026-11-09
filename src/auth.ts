@@ -7,6 +7,7 @@
 // - Not-configured environments (placeholder client id / missing secrets)
 //   return 503 instead of hitting Splitwise with junk.
 import { Hono } from "hono";
+import type { Context } from "hono";
 import { deleteCookie, getCookie, setCookie } from "hono/cookie";
 import { decrypt, encrypt } from "./lib/crypto";
 import {
@@ -22,6 +23,7 @@ import {
   fetchCurrentUser,
   SplitwiseAuthError,
 } from "./lib/splitwise";
+import type { AppEnv } from "./types";
 
 const PLACEHOLDER_CLIENT_ID = "REPLACE_ME_SPLITWISE_CLIENT_ID";
 
@@ -41,9 +43,19 @@ function allConfigured(env: {
   );
 }
 
-const COOKIE_FLAGS = { httpOnly: true, secure: true, sameSite: "Lax", path: "/" } as const;
+// Cookie attributes: Secure only on https origins (Safari refuses Secure
+// cookies over http://localhost, which breaks local dev logins).
+function cookieFlags(c: Context<AppEnv>) {
+  const isHttps = new URL(c.req.url).protocol === "https:";
+  return {
+    httpOnly: true,
+    secure: isHttps,
+    sameSite: "Lax" as const,
+    path: "/",
+  };
+}
 
-export const auth = new Hono<{ Bindings: CloudflareBindings }>()
+export const auth = new Hono<AppEnv>()
 
   .get("/auth/login", async (c) => {
     if (!allConfigured(c.env)) {
@@ -51,7 +63,7 @@ export const auth = new Hono<{ Bindings: CloudflareBindings }>()
     }
     const state = await signState(c.env.SESSION_SECRET);
     const redirectUri = `${new URL(c.req.url).origin}/auth/callback`;
-    setCookie(c, STATE_COOKIE, state, { ...COOKIE_FLAGS, maxAge: 600 });
+    setCookie(c, STATE_COOKIE, state, { ...cookieFlags(c), maxAge: 600 });
     c.header("Cache-Control", "no-store");
     return c.redirect(
       buildAuthorizeUrl(c.env.SPLITWISE_CLIENT_ID, redirectUri, state),
@@ -70,7 +82,7 @@ export const auth = new Hono<{ Bindings: CloudflareBindings }>()
     }
 
     const stateCookie = getCookie(c, STATE_COOKIE);
-    deleteCookie(c, STATE_COOKIE, { ...COOKIE_FLAGS, maxAge: 0 });
+    deleteCookie(c, STATE_COOKIE, { ...cookieFlags(c), maxAge: 0 });
     if (!stateCookie || stateCookie !== returnedState) {
       return c.text("State mismatch.", 400);
     }
@@ -123,11 +135,11 @@ export const auth = new Hono<{ Bindings: CloudflareBindings }>()
       .run();
 
     const session = await signSession(user.id, c.env.SESSION_SECRET);
-    setCookie(c, SESSION_COOKIE, session, { ...COOKIE_FLAGS, maxAge: 2592000 });
+    setCookie(c, SESSION_COOKIE, session, { ...cookieFlags(c), maxAge: 2592000 });
     return c.redirect("/dashboard", 302);
   })
 
   .get("/auth/logout", (c) => {
-    deleteCookie(c, SESSION_COOKIE, { ...COOKIE_FLAGS, maxAge: 0 });
+    deleteCookie(c, SESSION_COOKIE, { ...cookieFlags(c), maxAge: 0 });
     return c.redirect("/", 302);
   });
