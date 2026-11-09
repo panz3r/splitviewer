@@ -2,8 +2,9 @@
 
 ## Status
 
-- **Greenfield repo**: no source code yet (README + implementation plan only). Do not assume a build/test setup; scaffolding is part of the work.
-- `plans/Splitwise Public Dashboards Implementation Plan.md` is the source of truth for architecture, phases, and scope. Read it before implementing anything.
+- **Phase 5 committed + prod-verified (branch `phase-5-og-image`, `b2086765`)**: `/p/:slug/og.png` renders 1200×630 PNG via `@cf-wasm/og` from the same sanitized snapshot as the page (gating + SWR shared). OG meta (`og:image`, twitter:card) on the public page. satori SVG-escaping advisory accepted (masked labels only, PNG output). Requires `cache.setExecutionContext()` before render — see `src/og.tsx`. Remaining Phase 5 item: manual unfurl checks on messengers (user). Next: Phase 6 (rate limiting, token refresh, hardening) = MVP ship gate.
+- **Phase 3 was completed and prod-deployed** (`ad55a3db`, branch `phase-3-dashboard`). Hard-won gotchas: cookies derive `Secure` from request protocol (Safari refuses it on http://localhost); re-login sessions must be signed with the stored row id — always use `upsertUser()` (`src/lib/users.ts`).
+- `plans/Splitwise Public Dashboards Implementation Plan.md` is the source of truth for architecture, phases, and scope. Read it before implementing anything; per-phase execution plans live in `plans/` (gitignored, not committed).
 - Planned stack (per plan): Cloudflare Workers + Hono (SSR via hono/jsx), Cloudflare D1, Satori + @resvg/resvg-wasm for OG images, AES-256-GCM via Web Crypto for token encryption.
 
 ## Non-obvious product constraints
@@ -17,6 +18,20 @@ These are verbatim requirements from the plan, easy to miss while coding:
 - **Revocation must be instant**: deactivating a share means `/p/:slug` and `/p/:slug/og.png` return 404 immediately, not after cache expiry.
 - **Crawlers matter**: OG meta tags must render on bare GET (no JS), and `/p/:slug/og.png` returns a 1200×630 PNG. Verify with `curl -A "Twitterbot/1.0"`.
 
-## Setup (when scaffolding)
+## Cloudflare compliance: EU jurisdiction only (user requirement)
 
-- Plan prescribes: `npm create cloudflare@latest -- --template hono`, then wrangler.jsonc with a `DB` D1 binding, `nodejs_compat`, and a WASM rule for `@resvg/resvg-wasm/index_bg.wasm`. Follow the plan's phase order — OAuth (Phase 2) depends on the crypto module and D1 schema from Phase 1.
+- **Every Cloudflare resource must be created/recreated with `jurisdiction: eu`.** Verified command surface (wrangler 4.158): D1 `wrangler d1 create <name> --jurisdiction eu`; KV `wrangler kv namespace create <name> --jurisdiction eu` (and add `"jurisdiction": "eu"` to its wrangler.jsonc binding for local dev); R2 `wrangler r2 bucket create <name> -J eu`. If `--jurisdiction` is set, `--location` hints are ignored.
+- The prod D1 was recreated on 2026-11-09 with `jurisdiction: eu` (`d1 info` confirms `jurisdiction │ eu`).
+- Workers themselves run on the global edge (no per-Worker jurisdiction flag). If EU-only request processing is ever required, revisit Cloudflare's jurisdiction options then — don't assume "EU D1" constrains worker placement.
+- Before creating any new Cloudflare resource, check `--jurisdiction` exists for that resource type in `--help`; if it doesn't support jurisdiction, flag it before creating.
+
+## Setup
+
+- Scaffold source: `npm create hono@latest -- --template cloudflare-workers` (C3's `--framework=hono` path ignores its flags as of v2.74.9 — don't bother with it).
+- `wrangler.jsonc` has D1 binding `DB` → database `splitviewer` (`database_id` filled, DB created). Existing prod secret: `TOKEN_ENCRYPTION_KEY` (fresh key, differs from local `.dev.vars`).
+- Dev/prod use **two separate Splitwise apps** (Splitwise allows one callback URL per app): dev callback `http://localhost:8787/auth/callback`, prod callback `https://splitviewer.mattiapanzeri.workers.dev/auth/callback`. Prod `SPLITWISE_CLIENT_ID` is a wrangler.jsonc var (placeholder committed); `SPLITWISE_CLIENT_SECRET` + `SESSION_SECRET` are secrets (`wrangler secret put` for prod, `.dev.vars` for local).
+- hono/jwt gotchas: `verify(token, secret, "HS256")` (3rd arg required); payload types need a string index signature (`src/lib/jwt-types.ts`); `verify` throws on bad sig/expiry — the state/session helpers already turn that into `null`.
+- Deployed worker: https://splitviewer.mattiapanzeri.workers.dev (`npx wrangler deploy` to ship; run `npx wrangler d1 migrations apply DB --remote` after any new migration; local counterpart `--local` — **local D1 state is keyed by `database_id`**, so recreating a database — even with the same name — orphans locally-applied migrations until they're re-applied; bit us during the first real OAuth login).
+- After any `wrangler.jsonc` change (vars/bindings), re-run `npm run cf-typegen`.
+- Local dev secrets live in `.dev.vars` (gitignored): 64-hex-char `TOKEN_ENCRYPTION_KEY`.
+- Tests: vitest + `@cloudflare/vitest-plugin` (Cloudflare's new name; `@cloudflare/vitest-pool-workers` is legacy). Migrations auto-applied in tests via a `TEST_MIGRATIONS` binding. Follow the phase order — OAuth (Phase 2) depends on the crypto module (`src/lib/crypto.ts`) and D1 schema (`migrations/0001_init_schema.sql`) from Phase 1.
