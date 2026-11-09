@@ -17,6 +17,13 @@ These are verbatim requirements from the plan, easy to miss while coding:
 - **Revocation must be instant**: deactivating a share means `/p/:slug` and `/p/:slug/og.png` return 404 immediately, not after cache expiry.
 - **Crawlers matter**: OG meta tags must render on bare GET (no JS), and `/p/:slug/og.png` returns a 1200×630 PNG. Verify with `curl -A "Twitterbot/1.0"`.
 
+## Cloudflare compliance: EU jurisdiction only (user requirement)
+
+- **Every Cloudflare resource must be created/recreated with `jurisdiction: eu`.** Verified command surface (wrangler 4.158): D1 `wrangler d1 create <name> --jurisdiction eu`; KV `wrangler kv namespace create <name> --jurisdiction eu` (and add `"jurisdiction": "eu"` to its wrangler.jsonc binding for local dev); R2 `wrangler r2 bucket create <name> -J eu`. If `--jurisdiction` is set, `--location` hints are ignored.
+- The prod D1 was recreated on 2026-11-09 with `jurisdiction: eu` (`d1 info` confirms `jurisdiction │ eu`).
+- Workers themselves run on the global edge (no per-Worker jurisdiction flag). If EU-only request processing is ever required, revisit Cloudflare's jurisdiction options then — don't assume "EU D1" constrains worker placement.
+- Before creating any new Cloudflare resource, check `--jurisdiction` exists for that resource type in `--help`; if it doesn't support jurisdiction, flag it before creating.
+
 ## Setup
 
 - Scaffold source: `npm create hono@latest -- --template cloudflare-workers` (C3's `--framework=hono` path ignores its flags as of v2.74.9 — don't bother with it).
