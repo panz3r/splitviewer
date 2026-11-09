@@ -1,6 +1,6 @@
 import { env, createExecutionContext, waitOnExecutionContext } from "cloudflare:test";
 import { describe, expect, it } from "vitest";
-import worker from "../src";
+import worker from "../src/index";
 import { signSession, verifyState, signState } from "../src/lib/session";
 
 // Route-level tests against the real app. Env comes from the workers test

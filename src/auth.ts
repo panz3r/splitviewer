@@ -124,7 +124,7 @@ export const auth = new Hono<{ Bindings: CloudflareBindings }>()
 
     const session = await signSession(user.id, c.env.SESSION_SECRET);
     setCookie(c, SESSION_COOKIE, session, { ...COOKIE_FLAGS, maxAge: 2592000 });
-    return c.redirect("/", 302);
+    return c.redirect("/dashboard", 302);
   })
 
   .get("/auth/logout", (c) => {

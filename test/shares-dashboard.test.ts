@@ -1,5 +1,5 @@
 import { env } from "cloudflare:workers";
-import worker from "../src";
+import worker from "../src/index";
 import { describe, expect, it } from "vitest";
 import { signSession } from "../src/lib/session";
 import { encrypt } from "../src/lib/crypto";
