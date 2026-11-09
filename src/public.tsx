@@ -103,7 +103,7 @@ function UnavailablePage() {
   );
 }
 
-function PublicDashboard({ snapshot, asOfSeconds }: { snapshot: SanitizedSnapshot; asOfSeconds: number | null }) {
+function PublicDashboard({ snapshot, asOfSeconds, slug, origin }: { snapshot: SanitizedSnapshot; asOfSeconds: number | null; slug: string; origin: string }) {
   return (
     <html>
       <head>
@@ -120,6 +120,10 @@ function PublicDashboard({ snapshot, asOfSeconds }: { snapshot: SanitizedSnapsho
           }
         />
         <meta property="og:type" content="website" />
+        <meta property="og:image" content={`${origin}/p/${slug}/og.png`} />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
+        <meta name="twitter:card" content="summary_large_image" />
         <style>{STYLE}</style>
       </head>
       <body>
@@ -186,7 +190,7 @@ export const publicView = new Hono<AppEnv>()
       ) : view.status === 502 || !view.snapshot ? (
         <UnavailablePage />
       ) : (
-        <PublicDashboard snapshot={view.snapshot} asOfSeconds={view.asOfSeconds} />
+        <PublicDashboard snapshot={view.snapshot} asOfSeconds={view.asOfSeconds} slug={slug} origin={origin} />
       );
     // No-store for 404/502; short browser cache for 200 (crawlers re-fetch, fine).
     c.header("Cache-Control", view.status === 200 ? "max-age=30" : "no-store");
