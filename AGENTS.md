@@ -2,8 +2,8 @@
 
 ## Status
 
-- **Greenfield repo**: no source code yet (README + implementation plan only). Do not assume a build/test setup; scaffolding is part of the work.
-- `plans/Splitwise Public Dashboards Implementation Plan.md` is the source of truth for architecture, phases, and scope. Read it before implementing anything.
+- **Greenfield repo**: scaffolding in progress on branch `phase-1-setup` (per `plans/phase-1-setup.md`). No committed source yet.
+- `plans/Splitwise Public Dashboards Implementation Plan.md` is the source of truth for architecture, phases, and scope. Read it before implementing anything; per-phase execution plans live in `plans/` (gitignored, not committed).
 - Planned stack (per plan): Cloudflare Workers + Hono (SSR via hono/jsx), Cloudflare D1, Satori + @resvg/resvg-wasm for OG images, AES-256-GCM via Web Crypto for token encryption.
 
 ## Non-obvious product constraints
@@ -19,4 +19,4 @@ These are verbatim requirements from the plan, easy to miss while coding:
 
 ## Setup (when scaffolding)
 
-- Plan prescribes: `npm create cloudflare@latest -- --template hono`, then wrangler.jsonc with a `DB` D1 binding, `nodejs_compat`, and a WASM rule for `@resvg/resvg-wasm/index_bg.wasm`. Follow the plan's phase order — OAuth (Phase 2) depends on the crypto module and D1 schema from Phase 1.
+- Plan prescribes: `npm create cloudflare@latest -- --template hono`. Verified concrete command (scaffold into temp dir, repo root is non-empty): `npx create-cloudflare@latest splitviewer-scaffold -- --type=web-app --framework=hono --ts --no-git --no-deploy`, then copy config/src into repo root without overwriting README/LICENSE/.gitignore/AGENTS.md. Details in `plans/phase-1-setup.md`. Follow the plan's phase order — OAuth (Phase 2) depends on the crypto module and D1 schema from Phase 1.
