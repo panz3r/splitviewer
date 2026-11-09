@@ -5,7 +5,8 @@ import { Hono } from "hono";
 import { getCache, isFresh, setCache, deleteCache } from "./lib/cache";
 import { sanitizeGroup, type SanitizedSnapshot } from "./lib/sanitize";
 import { decAccessToken } from "./middleware";
-import { fetchGroup, SplitwiseAuthError } from "./lib/splitwise";
+import { fetchGroup, SplitwiseAuthError, type RawGroup } from "./lib/splitwise";
+import { refreshUserToken } from "./lib/users";
 import type { AppEnv } from "./types";
 
 interface PublicView {
@@ -46,8 +47,29 @@ export async function resolvePublicView(
       .first<{ id: string; splitwise_user_id: string; encrypted_access_token: string; token_expiry: number | null }>();
     if (!owner) return cache ? { status: 200, xCache: "stale", snapshot: cache.snapshot, asOfSeconds: cache.lastFetchedAt } : notFound;
 
-    const token = await decAccessToken(owner, env);
-    const rawGroup = await fetchGroup(token, share.splitwise_group_id, fetchImpl);
+    let token = await decAccessToken(owner, env);
+    const rawGroup = await (async (): Promise<RawGroup> => {
+      try {
+        return await fetchGroup(token, share.splitwise_group_id, fetchImpl);
+      } catch (error) {
+        // 401 → one automated token-refresh attempt then a single retry
+        // (upstream Phase 6). If refresh is impossible (no refresh token stored —
+        // the observed Splitwise behavior), fall through to the stale path below.
+        if (!(error instanceof SplitwiseAuthError) || error.status !== 401) throw error;
+
+        const refreshed = await refreshUserToken(env, owner, fetchImpl);
+        if (!refreshed) throw error;
+        const freshOwner = await env.DB.prepare(
+          "SELECT id, splitwise_user_id, encrypted_access_token, token_expiry FROM users WHERE id = ?1",
+        )
+          .bind(owner.id)
+          .first<{ id: string; splitwise_user_id: string; encrypted_access_token: string; token_expiry: number | null }>();
+        if (!freshOwner) throw error;
+        token = await decAccessToken(freshOwner, env);
+        return await fetchGroup(token, share.splitwise_group_id, fetchImpl);
+      }
+    })();
+
     const snapshot = sanitizeGroup(slug, rawGroup);
     const now = Math.floor(Date.now() / 1000);
     await setCache(env, slug, snapshot, now);

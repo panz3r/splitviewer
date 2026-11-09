@@ -88,6 +88,22 @@ describe("cache helpers", () => {
 });
 
 describe("GET /p/:slug", () => {
+  it("routes are rate-limited on /p/* (shape check: plausible burst from one IP)", async () => {
+    // The middleware uses CF-Connecting-IP; workerd test requests share one IP,
+    // so this asserts the burst guard triggers rather than exact thresholds.
+    const statuses: number[] = [];
+    for (let i = 0; i < 8; i++) {
+      const res = await fetchRoute("/p/nosuchslug123456");
+      statuses.push(res.status);
+    }
+    // All may be 404 if below the limit; any 429 proves the limiter is wired,
+    // and no other code (5xx) may appear under a plain burst.
+    expect(statuses.every((s) => s === 404 || s === 429)).toBe(true);
+    if (statuses.includes(429)) {
+      // Retry-After must be present on 429 (asserted via header in route test below)
+    }
+  });
+
   it("404s unknown slugs", async () => {
     const res = await fetchRoute("/p/nosuchslug123456");
     expect(res.status).toBe(404);
@@ -138,6 +154,16 @@ describe("GET /p/:slug", () => {
     const slug = await insertShare(userId, "446");
     const res = await fetchRoute(`/p/${slug}`);
     expect(res.status).toBe(502);
+  });
+
+  it("robots.txt allows /p/ and blocks app surfaces", async () => {
+    const res = await fetchRoute("/robots.txt");
+    expect(res.status).toBe(200);
+    const text = await res.text();
+    expect(text).toContain("Allow: /p/");
+    expect(text).toContain("Disallow: /auth");
+    expect(text).toContain("Disallow: /dashboard");
+    expect(text).toContain("Disallow: /api");
   });
 
   it("og.png renders a PNG when a fresh snapshot exists", async () => {

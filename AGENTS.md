@@ -2,7 +2,7 @@
 
 ## Status
 
-- **Phase 4 code committed (branch `phase-4-public-view`, MVP pending deploy)**: public `/p/:slug` live-verified end-to-end (refetched → fresh → revoke → instant 404 + cache delete). Public content ONLY ever comes from sanitized snapshots (`src/lib/sanitize.ts`) — the cache stores no emails/ids/avatars. `resolvePublicView` in `src/public.tsx` is the SWR decision tree. Tests: 58 green. Prod deploy of this phase still pending.
+- **Phase 5 committed + prod-verified (branch `phase-5-og-image`, `b2086765`)**: `/p/:slug/og.png` renders 1200×630 PNG via `@cf-wasm/og` from the same sanitized snapshot as the page (gating + SWR shared). OG meta (`og:image`, twitter:card) on the public page. satori SVG-escaping advisory accepted (masked labels only, PNG output). Requires `cache.setExecutionContext()` before render — see `src/og.tsx`. Remaining Phase 5 item: manual unfurl checks on messengers (user). Next: Phase 6 (rate limiting, token refresh, hardening) = MVP ship gate.
 - **Phase 3 was completed and prod-deployed** (`ad55a3db`, branch `phase-3-dashboard`). Hard-won gotchas: cookies derive `Secure` from request protocol (Safari refuses it on http://localhost); re-login sessions must be signed with the stored row id — always use `upsertUser()` (`src/lib/users.ts`).
 - `plans/Splitwise Public Dashboards Implementation Plan.md` is the source of truth for architecture, phases, and scope. Read it before implementing anything; per-phase execution plans live in `plans/` (gitignored, not committed).
 - Planned stack (per plan): Cloudflare Workers + Hono (SSR via hono/jsx), Cloudflare D1, Satori + @resvg/resvg-wasm for OG images, AES-256-GCM via Web Crypto for token encryption.
