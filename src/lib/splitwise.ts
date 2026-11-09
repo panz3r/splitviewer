@@ -131,6 +131,69 @@ export interface SplitwiseUser {
   lastName?: string;
 }
 
+/** Raw (unsanitized) group as returned by GET /get_group/{id}. */
+export interface RawGroup {
+  id: string;
+  name: string;
+  updatedAt?: string;
+  members: Array<{ id: string; firstName: string; lastName: string }>;
+  simplifiedDebts: Array<{ from: string; to: string; amount: string; currencyCode: string }>;
+  raw?: unknown; // kept for debugging; never persisted/rendered
+}
+
+export async function fetchGroup(
+  accessToken: string,
+  groupId: string,
+  fetchImpl: typeof fetch = fetch,
+): Promise<RawGroup> {
+  const res = await fetchImpl(`${SPLITWISE.API_BASE}/get_group/${encodeURIComponent(groupId)}`, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  if (res.status === 401) {
+    throw new SplitwiseAuthError("Splitwise rejected the access token", 401);
+  }
+  if (!res.ok) {
+    throw new SplitwiseAuthError(
+      `Splitwise get_group failed with status ${res.status}`,
+      res.status,
+    );
+  }
+  const parsed = (await res.json()) as {
+    group?: {
+      id?: unknown;
+      name?: unknown;
+      updated_at?: unknown;
+      members?: Array<{ id?: unknown; first_name?: unknown; last_name?: unknown }>;
+      simplified_debts?: Array<{ from?: unknown; to?: unknown; amount?: unknown; currency_code?: unknown }>;
+    };
+  };
+  const group = parsed.group;
+  if (!group || (typeof group.id !== "number" && typeof group.id !== "string")) {
+    throw new SplitwiseAuthError("Splitwise get_group returned no group", 500);
+  }
+  return {
+    id: String(group.id),
+    name: typeof group.name === "string" ? group.name : "",
+    updatedAt: typeof group.updated_at === "string" ? group.updated_at : undefined,
+    members: (group.members ?? [])
+      .filter((m) => typeof m.first_name === "string")
+      .map((m) => ({
+        id: String(m.id ?? ""),
+        firstName: m.first_name as string,
+        lastName: typeof m.last_name === "string" ? m.last_name : "",
+      })),
+    simplifiedDebts: (group.simplified_debts ?? [])
+      .filter((d) => d.amount != null && d.currency_code != null)
+      .map((d) => ({
+        from: String(d.from ?? ""),
+        to: String(d.to ?? ""),
+        amount: String(d.amount ?? ""),
+        currencyCode: String(d.currency_code ?? ""),
+      })),
+    raw: group,
+  };
+}
+
 export async function fetchCurrentUser(
   accessToken: string,
   fetchImpl: typeof fetch = fetch,

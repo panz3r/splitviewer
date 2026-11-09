@@ -2,6 +2,7 @@ import { Hono } from 'hono'
 import { auth } from './auth'
 import { shares } from './shares'
 import { dashboard } from './dashboard'
+import { publicView } from './public'
 import { getSessionUserId } from './lib/session'
 import type { AppEnv } from './types'
 
@@ -10,6 +11,7 @@ const app = new Hono<AppEnv>()
 app.route('/', auth)
 app.route('/', shares)
 app.route('/', dashboard)
+app.route('/', publicView)
 
 app.get('/', async (c) => {
   const userId = await getSessionUserId(c)

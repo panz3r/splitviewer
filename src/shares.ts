@@ -5,6 +5,7 @@ import { Hono } from "hono";
 import type { Context } from "hono";
 import { nanoid } from "nanoid";
 import { requireSession } from "./middleware";
+import { deleteCache } from "./lib/cache";
 import type { AppEnv } from "./types";
 
 export const SLUG_LENGTH = 16;
@@ -129,6 +130,9 @@ export const shares = new Hono<AppEnv>()
         ? c.json({ ok: false, error: "not_found" }, 404)
         : c.redirect("/dashboard?err=not_found", 303);
     }
+    // Revocation must be instant: the public page also checks is_active, but
+    // dropping the cache makes "revoked" and "missing" truly identical.
+    await deleteCache(c.env, input.slug);
     return isJson(c)
       ? c.json({ ok: true, active: false })
       : c.redirect("/dashboard?msg=revoked", 303);

@@ -2,7 +2,7 @@
 
 ## Status
 
-- **Phase 2 complete (committed on branch `phase-2-oauth`)**: real OAuth round-trips verified for both dev and prod apps (prod users row in EU D1, colo MXP). All prod secrets live. Merge into `main` deferred until after Phase 3 (user decision 2026-11-09). Protected-route/session middleware lands with Phase 3 (`getSessionUserId` in `src/lib/session.ts` already exists).
+- **Phase 3 complete (branch `phase-3-dashboard`, all work committed incl. live verified)**: browser-verified dashboard + share create/revoke locally; deployed to prod (`ad55a3db`). Two fixed gotchas: cookies must derive `Secure` from request protocol (Safari refuses it on http://localhost); re-login must sign the session with the stored row id — `upsertUser()` (`src/lib/users.ts`) exists so callers never reintroduce that bug. Public `/p/:slug` is still 404 (Phase 4 scope). Merge into `main` after Phase 3 per user decision.
 - `plans/Splitwise Public Dashboards Implementation Plan.md` is the source of truth for architecture, phases, and scope. Read it before implementing anything; per-phase execution plans live in `plans/` (gitignored, not committed).
 - Planned stack (per plan): Cloudflare Workers + Hono (SSR via hono/jsx), Cloudflare D1, Satori + @resvg/resvg-wasm for OG images, AES-256-GCM via Web Crypto for token encryption.
 
