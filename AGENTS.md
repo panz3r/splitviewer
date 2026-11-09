@@ -2,7 +2,7 @@
 
 ## Status
 
-- **Phase 2 (Splitwise OAuth) code committed on branch `phase-2-oauth`** with placeholder credentials. Routes guard on config: `/auth/*` return 503 until real values exist. Protected-route/session middleware lands with Phase 3 (`getSessionUserId` in `src/lib/session.ts` already exists).
+- **Phase 2 complete (committed on branch `phase-2-oauth`)**: real OAuth round-trips verified for both dev and prod apps (prod users row in EU D1, colo MXP). All prod secrets live. Merge into `main` deferred until after Phase 3 (user decision 2026-11-09). Protected-route/session middleware lands with Phase 3 (`getSessionUserId` in `src/lib/session.ts` already exists).
 - `plans/Splitwise Public Dashboards Implementation Plan.md` is the source of truth for architecture, phases, and scope. Read it before implementing anything; per-phase execution plans live in `plans/` (gitignored, not committed).
 - Planned stack (per plan): Cloudflare Workers + Hono (SSR via hono/jsx), Cloudflare D1, Satori + @resvg/resvg-wasm for OG images, AES-256-GCM via Web Crypto for token encryption.
 

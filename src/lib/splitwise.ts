@@ -90,6 +90,41 @@ export async function exchangeCodeForToken(
   return token;
 }
 
+export interface SplitwiseGroup {
+  id: string;
+  name: string;
+}
+
+export async function fetchGroups(
+  accessToken: string,
+  fetchImpl: typeof fetch = fetch,
+): Promise<SplitwiseGroup[]> {
+  const res = await fetchImpl(`${SPLITWISE.API_BASE}/get_groups`, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  if (res.status === 401) {
+    throw new SplitwiseAuthError("Splitwise rejected the access token", 401);
+  }
+  if (!res.ok) {
+    throw new SplitwiseAuthError(
+      `Splitwise get_groups failed with status ${res.status}`,
+      res.status,
+    );
+  }
+  const parsed = (await res.json()) as {
+    groups?: Array<{ id?: unknown; name?: unknown }>;
+  };
+  if (!Array.isArray(parsed.groups)) {
+    throw new SplitwiseAuthError("Splitwise get_groups returned no groups array", 500);
+  }
+  return parsed.groups
+    .filter((g) => typeof g.id === "number" || typeof g.id === "string")
+    .map((g) => ({
+      id: String(g.id),
+      name: typeof g.name === "string" ? g.name : "",
+    }));
+}
+
 export interface SplitwiseUser {
   id: string;
   firstName?: string;
