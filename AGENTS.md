@@ -2,10 +2,10 @@
 
 ## Status
 
-- **Phase 5 committed + prod-verified (branch `phase-5-og-image`, `b2086765`)**: `/p/:slug/og.png` renders 1200×630 PNG via `@cf-wasm/og` from the same sanitized snapshot as the page (gating + SWR shared). OG meta (`og:image`, twitter:card) on the public page. satori SVG-escaping advisory accepted (masked labels only, PNG output). Requires `cache.setExecutionContext()` before render — see `src/og.tsx`. Remaining Phase 5 item: manual unfurl checks on messengers (user). Next: Phase 6 (rate limiting, token refresh, hardening) = MVP ship gate.
-- **Phase 3 was completed and prod-deployed** (`ad55a3db`, branch `phase-3-dashboard`). Hard-won gotchas: cookies derive `Secure` from request protocol (Safari refuses it on http://localhost); re-login sessions must be signed with the stored row id — always use `upsertUser()` (`src/lib/users.ts`).
-- `plans/Splitwise Public Dashboards Implementation Plan.md` is the source of truth for architecture, phases, and scope. Read it before implementing anything; per-phase execution plans live in `plans/` (gitignored, not committed).
-- Planned stack (per plan): Cloudflare Workers + Hono (SSR via hono/jsx), Cloudflare D1, Satori + @resvg/resvg-wasm for OG images, AES-256-GCM via Web Crypto for token encryption.
+- **`v0.1.0-mvp` shipped on `main`** (2026-11-09, all phase branches merged & deleted): Cloudflare Workers + Hono app — Splitwise OAuth, organizer dashboard, public sanitized dashboards with SWR cache, OG images, rate limiting. Deployed at https://splitviewer.mattiapanzeri.workers.dev (worker version `16286f9b`). Live feature: share a group via dashboard → public page + messenger unfurl.
+- Hard-won gotchas (see per-phase notes in `plans/` for full context): cookies derive `Secure` from the request protocol (Safari refuses it on http://localhost); sign sessions with the stored row id — always use `upsertUser()` (`src/lib/users.ts`); OG rendering requires `cache.setExecutionContext()` first (`src/og.tsx`).
+- `plans/Splitwise Public Dashboards Implementation Plan.md` is the source of truth for architecture, phases, and scope. Per-phase execution records live in `plans/` (gitignored, not committed).
+- Stack as built: Cloudflare Workers + Hono SSR, Cloudflare D1 (EU jurisdiction), `@cf-wasm/og` for OG images, AES-256-GCM via Web Crypto, vitest workers integration (70 tests).
 
 ## Non-obvious product constraints
 
