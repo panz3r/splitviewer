@@ -20,6 +20,7 @@ These are verbatim requirements from the plan, easy to miss while coding:
 ## Setup
 
 - Scaffold source: `npm create hono@latest -- --template cloudflare-workers` (C3's `--framework=hono` path ignores its flags as of v2.74.9 — don't bother with it).
-- `wrangler.jsonc` has D1 binding `DB` with an empty `database_id` (works locally). Before any remote deploy: `wrangler d1 create splitviewer`, paste the id, run `npx wrangler d1 migrations apply DB --remote`, and set the prod secret `wrangler secret put TOKEN_ENCRYPTION_KEY`.
+- `wrangler.jsonc` has D1 binding `DB` → database `splitviewer` (`database_id` filled, DB created). Existing prod secret: `TOKEN_ENCRYPTION_KEY` (fresh key, differs from local `.dev.vars`).
+- Deployed worker: https://splitviewer.mattiapanzeri.workers.dev (`npx wrangler deploy` to ship; run `npx wrangler d1 migrations apply DB --remote` after any new migration).
 - Local dev secrets live in `.dev.vars` (gitignored): 64-hex-char `TOKEN_ENCRYPTION_KEY`.
 - Tests: vitest + `@cloudflare/vitest-plugin` (Cloudflare's new name; `@cloudflare/vitest-pool-workers` is legacy). Migrations auto-applied in tests via a `TEST_MIGRATIONS` binding. Follow the phase order — OAuth (Phase 2) depends on the crypto module (`src/lib/crypto.ts`) and D1 schema (`migrations/0001_init_schema.sql`) from Phase 1.
