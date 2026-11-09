@@ -23,6 +23,7 @@ import {
   fetchCurrentUser,
   SplitwiseAuthError,
 } from "./lib/splitwise";
+import { upsertUser } from "./lib/users";
 import type { AppEnv } from "./types";
 
 const PLACEHOLDER_CLIENT_ID = "REPLACE_ME_SPLITWISE_CLIENT_ID";
@@ -116,25 +117,17 @@ export const auth = new Hono<AppEnv>()
       encrypt(tokens.refreshToken, c.env.TOKEN_ENCRYPTION_KEY),
     ]);
 
-    await c.env.DB.prepare(
-      `INSERT INTO users (id, splitwise_user_id, encrypted_access_token, encrypted_refresh_token, token_expiry)
-       VALUES (?1, ?2, ?3, ?4, ?5)
-       ON CONFLICT(splitwise_user_id) DO UPDATE SET
-         encrypted_access_token = excluded.encrypted_access_token,
-         encrypted_refresh_token = excluded.encrypted_refresh_token,
-         token_expiry = excluded.token_expiry,
-         updated_at = unixepoch()`,
-    )
-      .bind(
-        crypto.randomUUID(),
-        user.id,
-        encAccess,
-        encRefresh,
-        tokens.expiresAt,
-      )
-      .run();
-
-    const session = await signSession(user.id, c.env.SESSION_SECRET);
+    const storedUserId = await upsertUser(c.env, {
+      splitwiseUserId: user.id,
+      encryptedAccessToken: encAccess,
+      encryptedRefreshToken: encRefresh,
+      tokenExpiry: tokens.expiresAt,
+    });
+    // Sign the session with the ACTUAL stored row id: on re-login the upsert
+    // keeps the existing row (and its id); signing a freshly generated UUID
+    // would create a session that references a nonexistent user, making every
+    // re-login bounce into the authorize loop.
+    const session = await signSession(storedUserId, c.env.SESSION_SECRET);
     setCookie(c, SESSION_COOKIE, session, { ...cookieFlags(c), maxAge: 2592000 });
     return c.redirect("/dashboard", 302);
   })
