@@ -2,7 +2,7 @@
 
 ## Status
 
-- **Phase 1 code committed on branch `phase-1-setup`** (scaffold + D1 schema + crypto module + tests). Run tests with `npm test` (vitest workers integration, uses `cloudflare:workers`/`cloudflare:test`); typecheck needs both `npx tsc -p tsconfig.json` and `-p test/tsconfig.json`.
+- **Phase 2 (Splitwise OAuth) code committed on branch `phase-2-oauth`** with placeholder credentials. Routes guard on config: `/auth/*` return 503 until real values exist. Protected-route/session middleware lands with Phase 3 (`getSessionUserId` in `src/lib/session.ts` already exists).
 - `plans/Splitwise Public Dashboards Implementation Plan.md` is the source of truth for architecture, phases, and scope. Read it before implementing anything; per-phase execution plans live in `plans/` (gitignored, not committed).
 - Planned stack (per plan): Cloudflare Workers + Hono (SSR via hono/jsx), Cloudflare D1, Satori + @resvg/resvg-wasm for OG images, AES-256-GCM via Web Crypto for token encryption.
 
@@ -28,6 +28,8 @@ These are verbatim requirements from the plan, easy to miss while coding:
 
 - Scaffold source: `npm create hono@latest -- --template cloudflare-workers` (C3's `--framework=hono` path ignores its flags as of v2.74.9 — don't bother with it).
 - `wrangler.jsonc` has D1 binding `DB` → database `splitviewer` (`database_id` filled, DB created). Existing prod secret: `TOKEN_ENCRYPTION_KEY` (fresh key, differs from local `.dev.vars`).
+- Dev/prod use **two separate Splitwise apps** (Splitwise allows one callback URL per app): dev callback `http://localhost:8787/auth/callback`, prod callback `https://splitviewer.mattiapanzeri.workers.dev/auth/callback`. Prod `SPLITWISE_CLIENT_ID` is a wrangler.jsonc var (placeholder committed); `SPLITWISE_CLIENT_SECRET` + `SESSION_SECRET` are secrets (`wrangler secret put` for prod, `.dev.vars` for local).
+- hono/jwt gotchas: `verify(token, secret, "HS256")` (3rd arg required); payload types need a string index signature (`src/lib/jwt-types.ts`); `verify` throws on bad sig/expiry — the state/session helpers already turn that into `null`.
 - Deployed worker: https://splitviewer.mattiapanzeri.workers.dev (`npx wrangler deploy` to ship; run `npx wrangler d1 migrations apply DB --remote` after any new migration).
 - Local dev secrets live in `.dev.vars` (gitignored): 64-hex-char `TOKEN_ENCRYPTION_KEY`.
 - Tests: vitest + `@cloudflare/vitest-plugin` (Cloudflare's new name; `@cloudflare/vitest-pool-workers` is legacy). Migrations auto-applied in tests via a `TEST_MIGRATIONS` binding. Follow the phase order — OAuth (Phase 2) depends on the crypto module (`src/lib/crypto.ts`) and D1 schema (`migrations/0001_init_schema.sql`) from Phase 1.
