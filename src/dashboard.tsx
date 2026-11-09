@@ -74,6 +74,10 @@ export const dashboard = new Hono<AppEnv>()
       (shareRows.results ?? []).map((s) => [s.splitwise_group_id, s]),
     );
 
+    // Splitwise returns id 0 ("Non-group expenses") in get_groups — not
+    // shareable; filter it out of the dashboard.
+    const visibleGroups = groups.filter((g) => g.id !== "0");
+
     const msg = c.req.query("msg");
     const err = c.req.query("err");
 
@@ -94,7 +98,7 @@ export const dashboard = new Hono<AppEnv>()
           {msg && FLASH_MSGS[msg] ? <p class="flash">{FLASH_MSGS[msg]}</p> : null}
           {err && FLASH_ERRS[err] ? <p class="flash err">{FLASH_ERRS[err]}</p> : null}
 
-          {groups.length === 0 ? (
+          {visibleGroups.length === 0 ? (
             <p>No groups found in your Splitwise account.</p>
           ) : (
             <table>
@@ -104,7 +108,7 @@ export const dashboard = new Hono<AppEnv>()
                 </tr>
               </thead>
               <tbody>
-                {groups.map((g) => {
+                {visibleGroups.map((g) => {
                   const share = sharesByGroupId.get(g.id);
                   return (
                     <tr>
