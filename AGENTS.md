@@ -2,7 +2,8 @@
 
 ## Status
 
-- **Phase 3 complete (branch `phase-3-dashboard`, all work committed incl. live verified)**: browser-verified dashboard + share create/revoke locally; deployed to prod (`ad55a3db`). Two fixed gotchas: cookies must derive `Secure` from request protocol (Safari refuses it on http://localhost); re-login must sign the session with the stored row id — `upsertUser()` (`src/lib/users.ts`) exists so callers never reintroduce that bug. Public `/p/:slug` is still 404 (Phase 4 scope). Merge into `main` after Phase 3 per user decision.
+- **Phase 4 code committed (branch `phase-4-public-view`, MVP pending deploy)**: public `/p/:slug` live-verified end-to-end (refetched → fresh → revoke → instant 404 + cache delete). Public content ONLY ever comes from sanitized snapshots (`src/lib/sanitize.ts`) — the cache stores no emails/ids/avatars. `resolvePublicView` in `src/public.tsx` is the SWR decision tree. Tests: 58 green. Prod deploy of this phase still pending.
+- **Phase 3 was completed and prod-deployed** (`ad55a3db`, branch `phase-3-dashboard`). Hard-won gotchas: cookies derive `Secure` from request protocol (Safari refuses it on http://localhost); re-login sessions must be signed with the stored row id — always use `upsertUser()` (`src/lib/users.ts`).
 - `plans/Splitwise Public Dashboards Implementation Plan.md` is the source of truth for architecture, phases, and scope. Read it before implementing anything; per-phase execution plans live in `plans/` (gitignored, not committed).
 - Planned stack (per plan): Cloudflare Workers + Hono (SSR via hono/jsx), Cloudflare D1, Satori + @resvg/resvg-wasm for OG images, AES-256-GCM via Web Crypto for token encryption.
 

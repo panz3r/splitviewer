@@ -3,6 +3,7 @@ import { auth } from './auth'
 import { shares } from './shares'
 import { dashboard } from './dashboard'
 import { publicView } from './public'
+import { ogImage } from './og'
 import { getSessionUserId } from './lib/session'
 import type { AppEnv } from './types'
 
@@ -12,6 +13,7 @@ app.route('/', auth)
 app.route('/', shares)
 app.route('/', dashboard)
 app.route('/', publicView)
+app.route('/', ogImage)
 
 app.get('/', async (c) => {
   const userId = await getSessionUserId(c)

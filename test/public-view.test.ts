@@ -140,10 +140,29 @@ describe("GET /p/:slug", () => {
     expect(res.status).toBe(502);
   });
 
-  it("og.png stays 404 until Phase 5", async () => {
-    const userId = await insertUser("555");
-    const slug = await insertShare(userId, "448");
+  it("og.png renders a PNG when a fresh snapshot exists", async () => {
+    const userId = await insertUser("556");
+    const slug = await insertShare(userId, "449");
+    await setCache(env, slug, sampleSnapshot(slug));
+
     const res = await fetchRoute(`/p/${slug}/og.png`);
-    expect(res.status).toBe(404);
+    expect(res.status).toBe(200);
+    expect(res.headers.get("Content-Type")).toBe("image/png");
+    expect(res.headers.get("Cache-Control")).toContain("max-age=300");
+    const bytes = new Uint8Array(await res.arrayBuffer());
+    // PNG signature: 89 50 4E 47 0D 0A 1A 0A
+    expect(Array.from(bytes.slice(0, 8))).toEqual([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+    expect(bytes.length).toBeGreaterThan(10_000); // sane card, not an empty canvas
+  });
+
+  it("og.png 404s for unknown and revoked slugs", async () => {
+    expect((await fetchRoute("/p/nosuchslug123456/og.png")).status).toBe(404);
+  });
+
+  it("og.png 502s with no cache and failing revalidation", async () => {
+    const userId = await insertUser("557");
+    const slug = await insertShare(userId, "450"); // dummy token -> Splitwise 401
+    const res = await fetchRoute(`/p/${slug}/og.png`);
+    expect(res.status).toBe(502);
   });
 });

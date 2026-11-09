@@ -162,9 +162,6 @@ function PublicDashboard({ snapshot, asOfSeconds }: { snapshot: SanitizedSnapsho
 
 export const publicView = new Hono<AppEnv>()
 
-  // og:image points here; Phase 5 replaces this 404.
-  .get("/p/:slug/og.png", (c) => c.notFound())
-
   .get("/p/:slug", async (c) => {
     const slug = c.req.param("slug");
     const origin = new URL(c.req.url).origin;
