@@ -17,23 +17,45 @@ const FLASH_ERRS: Record<string, string> = {
   share_write_failed: "Couldn't save the share. Please retry.",
 };
 
+  // Scripts produced via hono/jsx children get HTML-escaped (broken JS!) —
+  // they MUST be emitted with dangerouslySetInnerHTML (see script-escape-check
+  // note in plans/m4-ux-polish.md). Toast feedback included.
 const SHARE_SCRIPT = `
+  function showToast(msg) {
+    var t = document.getElementById("toast");
+    if (!t) {
+      t = document.createElement("div");
+      t.id = "toast";
+      t.className = "toast";
+      t.setAttribute("role", "status");
+      document.body.appendChild(t);
+    }
+    t.textContent = msg;
+    t.classList.add("show");
+    if (t._h) clearTimeout(t._h);
+    t._h = setTimeout(function () { t.classList.remove("show"); }, 1800);
+  }
   document.querySelectorAll("[data-share]").forEach(function (btn) {
     var url = btn.getAttribute("data-share");
     var supportsShare = typeof navigator.share === "function";
     btn.textContent = supportsShare ? "Share" : "Share URL";
     btn.addEventListener("click", function () {
       if (supportsShare) {
-        navigator.share({ title: "SplitViewer", url: url }).catch(function () {});
+        navigator.share({ title: "SplitViewer", url: url }).then(
+          function () { showToast("Shared — thanks!"); },
+          function (err) {
+            // Cancelling the sheet is not an error the user must see.
+            if (err && err.name !== "AbortError") showToast("Could not share");
+          }
+        );
       } else {
-        navigator.clipboard.writeText(url).then(function () {
-          btn.textContent = "Copied!";
-          btn.disabled = true;
-          window.setTimeout(function () {
-            btn.textContent = "Copy";
-            btn.disabled = false;
-          }, 1500);
-        });
+        navigator.clipboard.writeText(url).then(
+          function () { showToast("Link copied to clipboard"); },
+          function () {
+            btn.disabled = true;
+            showToast("Press Cmd/Ctrl+C to copy the link");
+          }
+        );
       }
     });
   });
@@ -44,6 +66,14 @@ const GAVATAR_STYLE = `
              border: 1px solid var(--line); background: var(--soft); }
   .gcard .gname { display: flex; align-items: center; gap: .55rem; }
   .gcard .row { margin-bottom: .4rem; }
+`;
+
+const TOAST_STYLE = `
+  .toast { position: fixed; left: 50%; bottom: 1.4rem; transform: translateX(-50%) translateY(8px);
+           background: var(--ink); color: var(--paper); padding: .65rem 1.1rem; border-radius: 10px;
+           box-shadow: var(--shadow); font-size: .95rem; opacity: 0; pointer-events: none;
+           transition: opacity .2s, transform .2s; z-index: 100; }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 `;
 
 function Badge({ on }: { on: boolean }) {
@@ -194,6 +224,7 @@ export const dashboard = new Hono<AppEnv>()
         user={{ avatarUrl: user.avatar_url, firstName: user.first_name }}
       >
         <style>{GAVATAR_STYLE}</style>
+        <style>{TOAST_STYLE}</style>
         <Flash msg={msg && FLASH_MSGS[msg] ? FLASH_MSGS[msg] : undefined} err={err && FLASH_ERRS[err] ? FLASH_ERRS[err] : undefined} />
 
         {visibleGroups.length === 0 ? (
@@ -230,7 +261,11 @@ export const dashboard = new Hono<AppEnv>()
           )
         )}
 
-        <script>{SHARE_SCRIPT}</script>
+        {/* Toast + share script. NOTE: hono/jsx escapes string children, so
+            the script MUST go through dangerouslySetInnerHTML (raw) or the
+            browser gets a syntax-error script tag. */}
+        <div id="toast" class="toast" aria-live="polite"></div>
+        <script dangerouslySetInnerHTML={{ __html: SHARE_SCRIPT }} />
       </PageShell>,
     );
   });
