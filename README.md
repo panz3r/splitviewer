@@ -47,3 +47,9 @@ app with `http://localhost:8787/auth/callback` for local testing).
 ## License
 
 GNU GPL v3 — see [LICENSE](LICENSE).
+
+## Support
+
+Questions, FAQ and abuse reports: see [SUPPORT.md](SUPPORT.md) or the in-app
+support page at `/support`. Contributions welcome — read
+[CONTRIBUTING.md](CONTRIBUTING.md) first.

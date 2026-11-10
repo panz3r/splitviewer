@@ -7,6 +7,7 @@ import { sanitizeGroup, type SanitizedSnapshot } from "./lib/sanitize";
 import { decAccessToken } from "./middleware";
 import { fetchGroup, SplitwiseAuthError, type RawGroup } from "./lib/splitwise";
 import { refreshUserToken } from "./lib/users";
+import { PageShell } from "./ui/components";
 import type { AppEnv } from "./types";
 
 interface PublicView {
@@ -87,102 +88,100 @@ export async function resolvePublicView(
 }
 
 const STYLE = `
-  body { font-family: system-ui, sans-serif; max-width: 40rem; margin: 2rem auto; padding: 0 1rem; color: #1a1a1a; }
-  h1 { font-size: 1.4rem; }
-  .head { display: flex; justify-content: space-between; align-items: baseline; gap: .5rem; }
-  .cur { margin-top: 1.2rem; border: 1px solid #e2e2e2; border-radius: 8px; padding: .2rem .9rem .6rem; }
-  .badge { font-size: .75rem; padding: .15rem .5rem; border-radius: 999px; background: #eef2f7; }
+  .cur { margin-top: 1.2rem; border: 1px solid var(--line); border-radius: var(--radius-card); padding: .2rem 1.1rem .6rem; background: var(--paper); box-shadow: var(--shadow); }
   table { width: 100%; border-collapse: collapse; }
-  td { padding: .45rem 0; border-bottom: 1px solid #f0f0f0; font-variant-numeric: tabular-nums; }
+  td { padding: .45rem 0; border-bottom: 1px solid var(--line); font-variant-numeric: tabular-nums; }
   .amt { text-align: right; font-weight: 600; }
-  .flow { color: #555; }
-  .arrow { color: #999; padding: 0 .4rem; }
-  .foot { color: #777; font-size: .85rem; margin-top: 1.5rem; }
+  .arrow { color: var(--muted); padding: 0 .4rem; }
+  .foot { color: var(--muted); font-size: .85rem; margin-top: 1.5rem; }
 `;
 
 function NotFoundPage({ origin }: { origin: string }) {
   return (
-    <html>
-      <head><title>Not found — SplitViewer</title></head>
-      <body style={STYLE}>
-        <h1>Not found</h1>
+    <PageShell title="Not found — SplitViewer" hideNav>
+      <div class="card">
+        <h1 style="margin-top: 0;">Not found</h1>
         <p>This dashboard doesn't exist or has been revoked by its owner.</p>
-        <p class="foot"><a href={origin}>What is SplitViewer?</a></p>
-      </body>
-    </html>
+        <a class="btn" href={origin}>What is SplitViewer?</a>
+      </div>
+    </PageShell>
   );
 }
 
 function UnavailablePage() {
   return (
-    <html>
-      <head><title>Snapshot unavailable — SplitViewer</title></head>
-      <body style={STYLE}>
-        <h1>Snapshot unavailable</h1>
+    <PageShell title="Snapshot unavailable — SplitViewer" hideNav>
+      <div class="card">
+        <h1 style="margin-top: 0;">Snapshot unavailable</h1>
         <p>We couldn't refresh this dashboard right now. Try again soon.</p>
-      </body>
-    </html>
+      </div>
+    </PageShell>
   );
 }
 
 function PublicDashboard({ snapshot, asOfSeconds, slug, origin }: { snapshot: SanitizedSnapshot; asOfSeconds: number | null; slug: string; origin: string }) {
+  const ogDescription =
+    snapshot.currencies.length === 0
+      ? "No open debts — everyone is settled up."
+      : `${snapshot.currencies.reduce((n, c) => n + c.debts.length, 0)} open settlements · ${snapshot.currencies
+          .map((c) => c.currencyCode)
+          .join(", ")}`;
   return (
-    <html>
-      <head>
-        <title>SplitViewer — {snapshot.name}</title>
-        <meta property="og:title" content={snapshot.name} />
-        <meta
-          property="og:description"
-          content={
-            snapshot.currencies.length === 0
-              ? "No open debts — everyone is settled up."
-              : `${snapshot.currencies.reduce((n, c) => n + c.debts.length, 0)} open settlements · ${
-                  snapshot.currencies.map((c) => c.currencyCode).join(", ")
-                }`
-          }
-        />
-        <meta property="og:type" content="website" />
-        <meta property="og:image" content={`${origin}/p/${slug}/og.png`} />
-        <meta property="og:image:width" content="1200" />
-        <meta property="og:image:height" content="630" />
-        <meta name="twitter:card" content="summary_large_image" />
-        <style>{STYLE}</style>
-      </head>
-      <body>
-        <div class="head">
-          <h1>{snapshot.name}</h1>
+    <PageShell
+      title={`SplitViewer — ${snapshot.name}`}
+      description={ogDescription}
+      head={
+        <>
+          <meta property="og:title" content={snapshot.name} />
+          <meta property="og:description" content={ogDescription} />
+          <meta property="og:type" content="website" />
+          <meta property="og:url" content={`${origin}/p/${slug}`} />
+          <meta property="og:image" content={`${origin}/p/${slug}/og.png`} />
+          <meta property="og:image:width" content="1200" />
+          <meta property="og:image:height" content="630" />
+          <meta name="twitter:card" content="summary_large_image" />
+        </>
+      }
+    >
+      <style>{STYLE}</style>
+
+      <h1 style="margin-top: .2rem;">{snapshot.name}</h1>
+
+      {snapshot.currencies.length === 0 ? (
+        <div class="card">
+          <p style="margin: 0;">No open debts — everyone is settled up. 🎉</p>
         </div>
+      ) : (
+        snapshot.currencies.map((block) => (
+          <section class="cur">
+            <h2>
+              {block.currencyCode} <span class="badge">{block.debts.length}</span>
+            </h2>
+            <table>
+              {block.debts.map((d) => (
+                <tr>
+                  <td>
+                    {d.from} <span class="arrow">→</span> {d.to}
+                  </td>
+                  <td class="amt">
+                    {d.amount} {block.currencyCode}
+                  </td>
+                </tr>
+              ))}
+            </table>
+          </section>
+        ))
+      )}
 
-        {snapshot.currencies.length === 0 ? (
-          <p>No open debts — everyone is settled up. 🎉</p>
-        ) : (
-          snapshot.currencies.map((block) => (
-            <section class="cur">
-              <h2>
-                {block.currencyCode} <span class="badge">{block.debts.length}</span>
-              </h2>
-              <table>
-                {block.debts.map((d) => (
-                  <tr>
-                    <td>
-                      {d.from} <span class="arrow">→</span> {d.to}
-                    </td>
-                    <td class="amt">
-                      {d.amount} {block.currencyCode}
-                    </td>
-                  </tr>
-                ))}
-              </table>
-            </section>
-          ))
-        )}
-
-        <p class="foot">
-          Private details are hidden — only first names and last initials are shown.
-          {asOfSeconds ? <> Updated {new Date(asOfSeconds * 1000).toISOString().slice(0, 16).replace("T", " ")} UTC.</> : null}
-        </p>
-      </body>
-    </html>
+      <p class="foot">
+        Private details are hidden — only first names and last initials are shown.
+        {asOfSeconds ? (
+          <>
+            {" "}Updated {new Date(asOfSeconds * 1000).toISOString().slice(0, 16).replace("T", " ")} UTC.
+          </>
+        ) : null}
+      </p>
+    </PageShell>
   );
 }
 
