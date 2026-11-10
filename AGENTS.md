@@ -2,7 +2,7 @@
 
 ## Status
 
-- **`v0.1.0-mvp` shipped on `main`** (2026-11-09, all phase branches merged & deleted): Cloudflare Workers + Hono app — Splitwise OAuth, organizer dashboard, public sanitized dashboards with SWR cache, OG images, rate limiting. Deployed at https://splitviewer.mattiapanzeri.workers.dev (worker version `16286f9b`). Live feature: share a group via dashboard → public page + messenger unfurl.
+- **`v0.1.0-mvp` + UI v1 shipped on `main` and pushed to https://github.com/panz3r/splitviewer** (2026-11-10, worker version `c791936c`). Design system in `src/ui/` (tokens, PageShell, Montserrat/Lato type pairing per Splitwise's own attributions, dark-mode aware), real homepage with randomized fake-data example card (`/example-card.png`), `/support` FAQ with takedown path, CONTRIBUTING.md + SUPPORT.md. Repo now has a public GitHub remote + v0.1.0-mvp tag. Deployed at https://splitviewer.mattiapanzeri.workers.dev.
 - Hard-won gotchas (see per-phase notes in `plans/` for full context): cookies derive `Secure` from the request protocol (Safari refuses it on http://localhost); sign sessions with the stored row id — always use `upsertUser()` (`src/lib/users.ts`); OG rendering requires `cache.setExecutionContext()` first (`src/og.tsx`).
 - `plans/Splitwise Public Dashboards Implementation Plan.md` is the source of truth for architecture, phases, and scope. Per-phase execution records live in `plans/` (gitignored, not committed).
 - Stack as built: Cloudflare Workers + Hono SSR, Cloudflare D1 (EU jurisdiction), `@cf-wasm/og` for OG images, AES-256-GCM via Web Crypto, vitest workers integration (70 tests).
