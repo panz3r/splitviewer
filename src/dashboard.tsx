@@ -1,22 +1,14 @@
-// Organizer dashboard: live group list + share controls, on the shared shell.
-// Local CSS covers only the table layout — tokens live in src/ui/styles.ts.
+// Organizer dashboard: group cards with share actions, on the shared shell.
+// The copy-link button is the only client JS in the app (dashboard is the
+// authenticated surface; public pages stay JS-free by design).
 import { Hono } from "hono";
 import { decAccessToken, requireSession } from "./middleware";
 import { fetchGroups, SplitwiseAuthError } from "./lib/splitwise";
 import { PageShell, Flash } from "./ui/components";
 import type { AppEnv, UserRow } from "./types";
 
-const TABLE_STYLE = `
-  table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
-  th, td { text-align: left; padding: .5rem .6rem; border-bottom: 1px solid var(--line); }
-  td { font-variant-numeric: tabular-nums; }
-  .rev { border-color: #d9a1a1; color: #a22; }
-  .url-cell code { font-size: .85rem; }
-  /* PageShell already ships .badge/.btn/.flash tokens; keep only table rules */
-`;
-
 const FLASH_MSGS: Record<string, string> = {
-  created: "Public link generated.",
+  created: "Public link generated — copy it below.",
   revoked: "Share revoked — the public link is dead.",
 };
 const FLASH_ERRS: Record<string, string> = {
@@ -25,9 +17,63 @@ const FLASH_ERRS: Record<string, string> = {
   share_write_failed: "Couldn't save the share. Please retry.",
 };
 
+const COPY_SCRIPT = `
+  document.querySelectorAll("[data-copy]").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var url = btn.getAttribute("data-copy");
+      navigator.clipboard.writeText(url).then(function () {
+        btn.textContent = "Copied!";
+        btn.disabled = true;
+        window.setTimeout(function () {
+          btn.textContent = "Copy";
+          btn.disabled = false;
+        }, 1500);
+      });
+    });
+  });
+`;
+
 function Badge({ on }: { on: boolean }) {
   return (
-    <span class={`badge ${on ? "on" : "off"}`}>{on ? "public" : "off"}</span>
+    <span class={`badge ${on ? "" : "badge--off"}`}>{on ? "public" : "off"}</span>
+  );
+}
+
+function GroupCard({ groupId, name, share, origin }: { groupId: string; name: string; share: { slug: string; is_active: number } | undefined; origin: string }) {
+  const active = share?.is_active === 1;
+  const url = `${origin}/p/${share?.slug ?? ""}`;
+  return (
+    <div class="card gcard">
+      <div class="row">
+        <span class="gname">{name}</span>
+        <Badge on={active} />
+      </div>
+      {active ? (
+        <>
+          <p class="url muted" style="margin: .5rem 0;">
+            <code>{url}</code>
+          </p>
+          <div class="actions">
+            <a class="btn btn--primary" href={url}>Open</a>
+            <button class="btn" type="button" data-copy={url} aria-label="Copy share link">
+              Copy
+            </button>
+            <form method="post" action="/api/shares/revoke">
+              <input type="hidden" name="slug" value={share?.slug ?? ""} />
+              <button class="btn btn--danger" type="submit" aria-label="Revoke share">
+                Revoke
+              </button>
+            </form>
+          </div>
+        </>
+      ) : (
+        <form method="post" action="/api/shares/create" style="margin-top: .8rem;">
+          <input type="hidden" name="groupId" value={groupId} />
+          <input type="hidden" name="groupName" value={name} />
+          <button class="btn btn--primary" type="submit">Create public link</button>
+        </form>
+      )}
+    </div>
   );
 }
 
@@ -48,10 +94,7 @@ export const dashboard = new Hono<AppEnv>()
         // Token no longer accepted: show reconnect page instead of a 500.
         // Auto-refresh logic is Phase 6.
         return c.html(
-          <PageShell
-            title="Reconnect Splitwise — SplitViewer"
-            hideNav
-          >
+          <PageShell title="Reconnect Splitwise — SplitViewer" hideNav>
             <div class="card">
               <h1 style="margin-top: 0;">Splitwise connection expired</h1>
               <p>We couldn't fetch your groups with the stored credentials.</p>
@@ -81,53 +124,39 @@ export const dashboard = new Hono<AppEnv>()
 
     return c.html(
       <PageShell title="Your groups — SplitViewer">
-        <div style="display:flex; justify-content:space-between; align-items:center; gap:.8rem;">
-          <h1 style="margin:.2rem 0;">Your Splitwise groups</h1>
+        <div style="display: flex; justify-content: space-between; align-items: center; gap: .8rem;">
+          <h1 style="margin: .2rem 0;">Your Splitwise groups</h1>
           <form method="post" action="/auth/logout">
             <button class="btn" type="submit">Log out</button>
           </form>
         </div>
 
         <Flash msg={msg && FLASH_MSGS[msg] ? FLASH_MSGS[msg] : undefined} err={err && FLASH_ERRS[err] ? FLASH_ERRS[err] : undefined} />
-        <style>{TABLE_STYLE}</style>
 
-          {visibleGroups.length === 0 ? (
-            <p>No groups found in your Splitwise account.</p>
-          ) : (
-            <table>
-              <thead>
-                <tr>
-                  <th>Group</th><th>Status</th><th>Public link</th><th></th>
-                </tr>
-              </thead>
-              <tbody>
-                {visibleGroups.map((g) => {
-                  const share = sharesByGroupId.get(g.id);
-                  return (
-                    <tr>
-                      <td>{g.name || `Group ${g.id}`}</td>
-                      <td><Badge on={share?.is_active === 1} /></td>
-                      <td>{share?.is_active === 1 ? <code>{`${origin}/p/${share.slug}`}</code> : <em>—</em>}</td>
-                      <td style="text-align:right">
-                        {share?.is_active === 1 ? (
-                          <form method="post" action="/api/shares/revoke">
-                            <input type="hidden" name="slug" value={share.slug} />
-                            <button class="btn rev" type="submit">Revoke</button>
-                          </form>
-                        ) : (
-                          <form method="post" action="/api/shares/create">
-                            <input type="hidden" name="groupId" value={g.id} />
-                            <input type="hidden" name="groupName" value={g.name} />
-                            <button class="btn" type="submit">Create public link</button>
-                          </form>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          )}
+        {visibleGroups.length === 0 ? (
+          <div class="card">
+            <p style="margin: 0;">
+              No groups found in your Splitwise account. Create one in Splitwise first,
+              then come back and refresh.
+            </p>
+          </div>
+        ) : (
+          <div class="ggrid">
+            {visibleGroups.map((g) => {
+              const share = sharesByGroupId.get(g.id);
+              return (
+                <GroupCard
+                  groupId={g.id}
+                  name={g.name || `Group ${g.id}`}
+                  share={share}
+                  origin={origin}
+                />
+              );
+            })}
+          </div>
+        )}
+
+        <script>{COPY_SCRIPT}</script>
       </PageShell>,
     );
   });

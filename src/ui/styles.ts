@@ -104,6 +104,20 @@ const HERO = `
   /* The sibling .card margin breaks grid row alignment - neutralize in steps */
   .steps .card { margin-top: 0; }
   .step { text-align: center; padding: 1.2rem 1rem; }
+  /* Dashboard: group cards grid (M4) */
+  .ggrid { display: grid; gap: 1rem; grid-template-columns: 1fr; }
+  @media (min-width: 768px) { .ggrid { grid-template-columns: 1fr 1fr; } }
+  .gcard .row { display: flex; justify-content: space-between; align-items: center; gap: .8rem; }
+  .gcard .gname { font-weight: 700; }
+  .gcard .actions { display: flex; gap: .5rem; flex-wrap: wrap; }
+  .gcard .url { overflow-wrap: anywhere; font-size: .85rem; }
+  /* Public page ledger (M4) */
+  .pub-title { font-size: clamp(1.5rem, 4vw, 2rem); margin: .2rem 0 .2rem; }
+  .pub-sub { color: var(--muted); font-size: .9rem; margin: 0 0 1.2rem; }
+  .cur h2 { display: flex; align-items: center; gap: .5rem; margin: .2rem 0 .4rem; font-size: 1.05rem; }
+  .ledger td { padding: .6rem 0; border-bottom: 1px solid var(--line); }
+  .ledger tr:last-child td { border-bottom: none; }
+  .ledger tbody tr:hover td { background: var(--soft); }
   .step .n { display: inline-flex; width: 2.1rem; height: 2.1rem; border-radius: 999px;
              background: var(--green); color: #fff; font-weight: 700; align-items: center;
              justify-content: center; margin-bottom: .6rem; }
