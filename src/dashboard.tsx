@@ -3,7 +3,7 @@
 // authenticated surface; public pages stay JS-free by design).
 import { Hono } from "hono";
 import { decAccessToken, requireSession } from "./middleware";
-import { fetchGroups, SplitwiseAuthError } from "./lib/splitwise";
+import { fetchGroups, SplitwiseAuthError, type SplitwiseGroup } from "./lib/splitwise";
 import { PageShell, Flash } from "./ui/components";
 import type { AppEnv, UserRow } from "./types";
 
@@ -50,15 +50,17 @@ function GroupCard({ groupId, name, share, origin }: { groupId: string; name: st
       </div>
       {active ? (
         <>
-          <p class="url muted" style="margin: .5rem 0;">
-            <code>{url}</code>
-          </p>
           <div class="actions">
             <a class="btn btn--primary" href={url}>Open</a>
-            <button class="btn" type="button" data-copy={url} aria-label="Copy share link">
-              Copy
+            <button
+              class="btn"
+              type="button"
+              data-copy={url}
+              aria-label="Copy share link"
+            >
+              Share URL
             </button>
-            <form method="post" action="/api/shares/revoke">
+            <form method="post" action="/api/shares/revoke" class="neg">
               <input type="hidden" name="slug" value={share?.slug ?? ""} />
               <button class="btn btn--danger" type="submit" aria-label="Revoke share">
                 Revoke
@@ -75,6 +77,45 @@ function GroupCard({ groupId, name, share, origin }: { groupId: string; name: st
       )}
     </div>
   );
+}
+
+// --- Sectioning (M4) -------------------------------------------------------
+// "Archived" follows Splitwise's own rule: settled up for more than 40 days.
+const ARCHIVE_AFTER_MS = 40 * 24 * 60 * 60 * 1000;
+
+function isSettled(group: { simplifiedDebts: Array<{ amount: string }> }): boolean {
+  return group.simplifiedDebts.every((d) => Number(d.amount) === 0);
+}
+
+function sortByLastUpdateDesc(groups: SplitwiseGroup[]): SplitwiseGroup[] {
+  return [...groups].sort((a, b) =>
+    String(b.updatedAt ?? "").localeCompare(String(a.updatedAt ?? "")),
+  );
+}
+
+function sectionize(
+  groups: SplitwiseGroup[],
+  sharesByGroupId: Map<string, { slug: string; is_active: number }>,
+  now = Date.now(),
+): { label: string; groups: SplitwiseGroup[] }[] {
+  const archived = groups.filter(
+    (g) =>
+      isSettled(g) &&
+      typeof g.updatedAt === "string" &&
+      now - new Date(g.updatedAt).getTime() > ARCHIVE_AFTER_MS,
+  );
+  const rest = groups.filter((g) => !archived.includes(g));
+  const publicGroups = rest.filter(
+    (g) => sharesByGroupId.get(g.id)?.is_active === 1,
+  );
+  const privateGroups = rest.filter(
+    (g) => sharesByGroupId.get(g.id)?.is_active !== 1,
+  );
+  return [
+    { label: "Public", groups: sortByLastUpdateDesc(publicGroups) },
+    { label: "Private", groups: sortByLastUpdateDesc(privateGroups) },
+    { label: "Archived", groups: sortByLastUpdateDesc(archived) },
+  ];
 }
 
 export const dashboard = new Hono<AppEnv>()
@@ -141,19 +182,29 @@ export const dashboard = new Hono<AppEnv>()
             </p>
           </div>
         ) : (
-          <div class="ggrid">
-            {visibleGroups.map((g) => {
-              const share = sharesByGroupId.get(g.id);
-              return (
-                <GroupCard
-                  groupId={g.id}
-                  name={g.name || `Group ${g.id}`}
-                  share={share}
-                  origin={origin}
-                />
-              );
-            })}
-          </div>
+          sectionize(visibleGroups, sharesByGroupId).map(
+            (section) =>
+              section.groups.length > 0 && (
+                <>
+                  <h2 class="section-title" style="font-size: 1.15rem; margin: 1.6rem 0 .8rem;">
+                    {section.label}
+                  </h2>
+                  <div class="ggrid">
+                    {section.groups.map((g) => {
+                      const share = sharesByGroupId.get(g.id);
+                      return (
+                        <GroupCard
+                          groupId={g.id}
+                          name={g.name || `Group ${g.id}`}
+                          share={share}
+                          origin={origin}
+                        />
+                      );
+                    })}
+                  </div>
+                </>
+              ),
+          )
         )}
 
         <script>{COPY_SCRIPT}</script>

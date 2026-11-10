@@ -72,10 +72,15 @@ const HEADER_FOOTER = `
 const COMPONENTS = `
   .btn {
     display: inline-flex; align-items: center; justify-content: center; gap: .45rem;
-    padding: .6rem 1.1rem; border-radius: var(--radius-btn); border: 1px solid var(--line);
-    background: var(--paper); color: var(--ink); font-weight: 600; font-size: .95rem;
-    text-decoration: none; cursor: pointer;
+    padding: 0 1.1rem; min-height: 2.55rem; height: 2.55rem; border-radius: var(--radius-btn);
+    border: 1px solid var(--line); background: var(--paper); color: var(--ink); font-weight: 600;
+    font-size: .95rem; text-decoration: none; cursor: pointer;
   }
+  /* Uniform action rows: forms must not stretch their buttons */
+  form .btn { height: 2.55rem; }
+  .actions { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; margin-top: .7rem; }
+  .actions .neg { margin-left: auto; }
+  .actions form { display: inline-flex; margin: 0; }
   .btn--primary { background: var(--green); border-color: var(--green); color: #fff; }
   .btn--primary:hover { background: var(--green-dark); }
   .btn--danger { border-color: #d9a1a1; color: var(--danger); }
@@ -109,8 +114,6 @@ const HERO = `
   @media (min-width: 768px) { .ggrid { grid-template-columns: 1fr 1fr; } }
   .gcard .row { display: flex; justify-content: space-between; align-items: center; gap: .8rem; }
   .gcard .gname { font-weight: 700; }
-  .gcard .actions { display: flex; gap: .5rem; flex-wrap: wrap; }
-  .gcard .url { overflow-wrap: anywhere; font-size: .85rem; }
   /* Public page ledger (M4) */
   .pub-title { font-size: clamp(1.5rem, 4vw, 2rem); margin: .2rem 0 .2rem; }
   .pub-sub { color: var(--muted); font-size: .9rem; margin: 0 0 1.2rem; }

@@ -93,6 +93,8 @@ export async function exchangeCodeForToken(
 export interface SplitwiseGroup {
   id: string;
   name: string;
+  updatedAt?: string;
+  simplifiedDebts: Array<{ amount: string }>;
 }
 
 export async function fetchGroups(
@@ -112,7 +114,12 @@ export async function fetchGroups(
     );
   }
   const parsed = (await res.json()) as {
-    groups?: Array<{ id?: unknown; name?: unknown }>;
+    groups?: Array<{
+      id?: unknown;
+      name?: unknown;
+      updated_at?: unknown;
+      simplified_debts?: Array<{ amount?: unknown; currency_code?: unknown }>;
+    }>;
   };
   if (!Array.isArray(parsed.groups)) {
     throw new SplitwiseAuthError("Splitwise get_groups returned no groups array", 500);
@@ -122,6 +129,11 @@ export async function fetchGroups(
     .map((g) => ({
       id: String(g.id),
       name: typeof g.name === "string" ? g.name : "",
+      updatedAt: typeof g.updated_at === "string" ? g.updated_at : undefined,
+      // Dashboard sorting needs "settled up" state; snapshot values only.
+      simplifiedDebts: (g.simplified_debts ?? [])
+        .filter((d) => d.amount != null)
+        .map((d) => ({ amount: String(d.amount ?? "") })),
     }));
 }
 
