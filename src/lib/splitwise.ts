@@ -94,6 +94,8 @@ export interface SplitwiseGroup {
   id: string;
   name: string;
   updatedAt?: string;
+  /** Group avatar for the dashboard cards (Splitwise CDN URL; anything else). */
+  avatarUrl?: string;
   simplifiedDebts: Array<{ amount: string }>;
 }
 
@@ -119,6 +121,7 @@ export async function fetchGroups(
       name?: unknown;
       updated_at?: unknown;
       simplified_debts?: Array<{ amount?: unknown; currency_code?: unknown }>;
+      avatar?: unknown;
     }>;
   };
   if (!Array.isArray(parsed.groups)) {
@@ -134,13 +137,27 @@ export async function fetchGroups(
       simplifiedDebts: (g.simplified_debts ?? [])
         .filter((d) => d.amount != null)
         .map((d) => ({ amount: String(d.amount ?? "") })),
+      avatarUrl: parsePictureUrl(g.avatar ?? null),
     }));
+}
+
+/** First available small/medium-sized avatar URL from a Splitwise picture object. */
+function parsePictureUrl(picture: unknown): string | undefined {
+  if (picture == null || typeof picture !== "object") return undefined;
+  const p = picture as Record<string, unknown>;
+  for (const size of ["small", "medium", "large"]) {
+    if (typeof p[size] === "string" && (p[size] as string).length > 0) {
+      return p[size] as string;
+    }
+  }
+  return undefined;
 }
 
 export interface SplitwiseUser {
   id: string;
   firstName?: string;
   lastName?: string;
+  avatarUrl?: string;
 }
 
 /** Raw (unsanitized) group as returned by GET /get_group/{id}. */
@@ -223,15 +240,22 @@ export async function fetchCurrentUser(
     );
   }
   const parsed = (await res.json()) as {
-    user?: { id?: unknown; first_name?: unknown; last_name?: unknown };
+    user?: {
+      id?: unknown;
+      first_name?: unknown;
+      last_name?: unknown;
+      picture?: Record<string, unknown> | null;
+    };
   };
-  const id = parsed.user?.id;
+  const user = parsed.user;
+  const id = user?.id;
   if (typeof id !== "number" && typeof id !== "string") {
     throw new SplitwiseAuthError("Splitwise get_current_user returned no user id", 500);
   }
   return {
     id: String(id),
-    firstName: typeof parsed.user?.first_name === "string" ? parsed.user.first_name : undefined,
-    lastName: typeof parsed.user?.last_name === "string" ? parsed.user.last_name : undefined,
+    firstName: typeof user?.first_name === "string" ? user.first_name : undefined,
+    lastName: typeof user?.last_name === "string" ? user.last_name : undefined,
+    avatarUrl: parsePictureUrl(user?.picture ?? null),
   };
 }

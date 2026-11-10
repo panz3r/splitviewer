@@ -42,10 +42,10 @@ export async function resolvePublicView(
   // Stale or missing: revalidate from Splitwise using the owner's token.
   try {
     const owner = await env.DB.prepare(
-      "SELECT id, splitwise_user_id, encrypted_access_token, token_expiry FROM users WHERE id = ?1",
+      "SELECT id, splitwise_user_id, encrypted_access_token, token_expiry, avatar_url, first_name FROM users WHERE id = ?1",
     )
       .bind(share.user_id)
-      .first<{ id: string; splitwise_user_id: string; encrypted_access_token: string; token_expiry: number | null }>();
+      .first<{ id: string; splitwise_user_id: string; encrypted_access_token: string; token_expiry: number | null; avatar_url: string | null; first_name: string | null }>();
     if (!owner) return cache ? { status: 200, xCache: "stale", snapshot: cache.snapshot, asOfSeconds: cache.lastFetchedAt } : notFound;
 
     let token = await decAccessToken(owner, env);
@@ -61,10 +61,10 @@ export async function resolvePublicView(
         const refreshed = await refreshUserToken(env, owner, fetchImpl);
         if (!refreshed) throw error;
         const freshOwner = await env.DB.prepare(
-          "SELECT id, splitwise_user_id, encrypted_access_token, token_expiry FROM users WHERE id = ?1",
+          "SELECT id, splitwise_user_id, encrypted_access_token, token_expiry, avatar_url, first_name FROM users WHERE id = ?1",
         )
           .bind(owner.id)
-          .first<{ id: string; splitwise_user_id: string; encrypted_access_token: string; token_expiry: number | null }>();
+          .first<{ id: string; splitwise_user_id: string; encrypted_access_token: string; token_expiry: number | null; avatar_url: string | null; first_name: string | null }>();
         if (!freshOwner) throw error;
         token = await decAccessToken(freshOwner, env);
         return await fetchGroup(token, share.splitwise_group_id, fetchImpl);

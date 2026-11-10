@@ -17,20 +17,33 @@ const FLASH_ERRS: Record<string, string> = {
   share_write_failed: "Couldn't save the share. Please retry.",
 };
 
-const COPY_SCRIPT = `
-  document.querySelectorAll("[data-copy]").forEach(function (btn) {
+const SHARE_SCRIPT = `
+  document.querySelectorAll("[data-share]").forEach(function (btn) {
+    var url = btn.getAttribute("data-share");
+    var supportsShare = typeof navigator.share === "function";
+    btn.textContent = supportsShare ? "Share" : "Share URL";
     btn.addEventListener("click", function () {
-      var url = btn.getAttribute("data-copy");
-      navigator.clipboard.writeText(url).then(function () {
-        btn.textContent = "Copied!";
-        btn.disabled = true;
-        window.setTimeout(function () {
-          btn.textContent = "Copy";
-          btn.disabled = false;
-        }, 1500);
-      });
+      if (supportsShare) {
+        navigator.share({ title: "SplitViewer", url: url }).catch(function () {});
+      } else {
+        navigator.clipboard.writeText(url).then(function () {
+          btn.textContent = "Copied!";
+          btn.disabled = true;
+          window.setTimeout(function () {
+            btn.textContent = "Copy";
+            btn.disabled = false;
+          }, 1500);
+        });
+      }
     });
   });
+`;
+
+const GAVATAR_STYLE = `
+  .gavatar { width: 2.6rem; height: 2.6rem; border-radius: 8px; object-fit: cover;
+             border: 1px solid var(--line); background: var(--soft); }
+  .gcard .gname { display: flex; align-items: center; gap: .55rem; }
+  .gcard .row { margin-bottom: .4rem; }
 `;
 
 function Badge({ on }: { on: boolean }) {
@@ -39,24 +52,36 @@ function Badge({ on }: { on: boolean }) {
   );
 }
 
-function GroupCard({ groupId, name, share, origin }: { groupId: string; name: string; share: { slug: string; is_active: number } | undefined; origin: string }) {
+function GroupCard({ groupId, name, avatarUrl, share, origin }: { groupId: string; name: string; avatarUrl?: string; share: { slug: string; is_active: number } | undefined; origin: string }) {
   const active = share?.is_active === 1;
   const url = `${origin}/p/${share?.slug ?? ""}`;
   return (
     <div class="card gcard">
       <div class="row">
-        <span class="gname">{name}</span>
+        <span class="gname">
+          {avatarUrl ? (
+            <img class="gavatar" src={avatarUrl} alt="" />
+          ) : null}
+          {name}
+        </span>
         <Badge on={active} />
       </div>
       {active ? (
         <>
+          {/* No-JS fallback: show the raw link so the dashboard still works
+              with scripts off; JS browsers hide it (Share covers it). */}
+          <noscript>
+            <p class="muted small" style="margin: .5rem 0; overflow-wrap: anywhere;">
+              <code>{url}</code>
+            </p>
+          </noscript>
           <div class="actions">
             <a class="btn btn--primary" href={url}>Open</a>
             <button
               class="btn"
               type="button"
-              data-copy={url}
-              aria-label="Copy share link"
+              data-share={url}
+              aria-label="Share the public link"
             >
               Share URL
             </button>
@@ -164,14 +189,11 @@ export const dashboard = new Hono<AppEnv>()
     const err = c.req.query("err");
 
     return c.html(
-      <PageShell title="Your groups — SplitViewer">
-        <div style="display: flex; justify-content: space-between; align-items: center; gap: .8rem;">
-          <h1 style="margin: .2rem 0;">Your Splitwise groups</h1>
-          <form method="post" action="/auth/logout">
-            <button class="btn" type="submit">Log out</button>
-          </form>
-        </div>
-
+      <PageShell
+        title="Your groups — SplitViewer"
+        user={{ avatarUrl: user.avatar_url, firstName: user.first_name }}
+      >
+        <style>{GAVATAR_STYLE}</style>
         <Flash msg={msg && FLASH_MSGS[msg] ? FLASH_MSGS[msg] : undefined} err={err && FLASH_ERRS[err] ? FLASH_ERRS[err] : undefined} />
 
         {visibleGroups.length === 0 ? (
@@ -196,6 +218,7 @@ export const dashboard = new Hono<AppEnv>()
                         <GroupCard
                           groupId={g.id}
                           name={g.name || `Group ${g.id}`}
+                          avatarUrl={g.avatarUrl}
                           share={share}
                           origin={origin}
                         />
@@ -207,7 +230,7 @@ export const dashboard = new Hono<AppEnv>()
           )
         )}
 
-        <script>{COPY_SCRIPT}</script>
+        <script>{SHARE_SCRIPT}</script>
       </PageShell>,
     );
   });

@@ -60,9 +60,25 @@ const HEADER_FOOTER = `
   .logo { font-weight: 800; font-size: 1.15rem; text-decoration: none; color: var(--ink);
           display: flex; align-items: center; gap: .45rem; }
   .logo .leaf { color: var(--green); }
-  .navlinks { display: flex; gap: 1.1rem; }
+  .navlinks { display: flex; gap: 1.1rem; align-items: center; }
   .navlinks a { color: var(--muted); text-decoration: none; font-size: .95rem; }
   .navlinks a:hover { color: var(--green-dark); }
+  /* Header account menu (native <details>, no JS) */
+  .usermenu { position: relative; }
+  .usermenu summary { display: flex; align-items: center; gap: .5rem; cursor: pointer;
+                      list-style: none; }
+  .usermenu summary::-webkit-details-marker { display: none; }
+  .usermenu .avatar { width: 2rem; height: 2rem; border-radius: 50%; object-fit: cover;
+                      border: 1px solid var(--line); }
+  .usermenu .avatar--fallback { display: inline-flex; align-items: center; justify-content: center;
+                                background: var(--green-soft); color: var(--green-dark);
+                                font-weight: 700; }
+  .usermenu .caret { color: var(--muted); font-size: .7rem; }
+  .usermenu .menu-pop { position: absolute; right: 0; top: calc(100% + .45rem);
+                        min-width: 9.5rem; z-index: 10; background: var(--paper);
+                        border: 1px solid var(--line); border-radius: var(--radius-btn);
+                        box-shadow: var(--shadow); padding: .5rem; }
+  .usermenu .menu-pop .btn { width: 100%; box-sizing: border-box; }
   .footer { border-top: 1px solid var(--line); padding: 1.2rem 0 2rem; color: var(--muted); font-size: .88rem; }
   .footer .container { display: flex; flex-wrap: wrap; gap: .8rem 1.4rem; justify-content: space-between;
                        align-items: center; }

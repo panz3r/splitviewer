@@ -11,6 +11,9 @@ export interface UpsertUserInput {
   encryptedAccessToken: string;
   encryptedRefreshToken: string;
   tokenExpiry: number | null;
+  /** Splitwise avatar URL + first name for the dashboard header widget (may be absent). */
+  avatarUrl?: string;
+  firstName?: string;
 }
 
 export async function upsertUser(
@@ -19,12 +22,15 @@ export async function upsertUser(
 ): Promise<string> {
   const results = await env.DB.batch([
     env.DB.prepare(
-      `INSERT INTO users (id, splitwise_user_id, encrypted_access_token, encrypted_refresh_token, token_expiry)
-       VALUES (?1, ?2, ?3, ?4, ?5)
+      `INSERT INTO users (id, splitwise_user_id, encrypted_access_token, encrypted_refresh_token,
+                          token_expiry, avatar_url, first_name)
+       VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)
        ON CONFLICT(splitwise_user_id) DO UPDATE SET
          encrypted_access_token = excluded.encrypted_access_token,
          encrypted_refresh_token = excluded.encrypted_refresh_token,
          token_expiry = excluded.token_expiry,
+         avatar_url = excluded.avatar_url,
+         first_name = excluded.first_name,
          updated_at = unixepoch()`,
     ).bind(
       crypto.randomUUID(),
@@ -32,6 +38,8 @@ export async function upsertUser(
       input.encryptedAccessToken,
       input.encryptedRefreshToken,
       input.tokenExpiry,
+      input.avatarUrl ?? null,
+      input.firstName ?? null,
     ),
     env.DB.prepare(
       "SELECT id FROM users WHERE splitwise_user_id = ?1",

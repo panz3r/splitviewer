@@ -122,6 +122,8 @@ export const auth = new Hono<AppEnv>()
       encryptedAccessToken: encAccess,
       encryptedRefreshToken: encRefresh,
       tokenExpiry: tokens.expiresAt,
+      avatarUrl: user.avatarUrl,
+      firstName: user.firstName,
     });
     // Sign the session with the ACTUAL stored row id: on re-login the upsert
     // keeps the existing row (and its id); signing a freshly generated UUID

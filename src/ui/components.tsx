@@ -12,6 +12,11 @@ interface PageShellProps {
   description?: string;
   /** Extra <head> content (e.g. OG meta), rendered inside the real head. */
   head?: any;
+  /**
+   * Session widget for the header (avatar + first name + Log-out menu, native
+   * <details> popup so it works without JS).
+   */
+  user?: { avatarUrl: string | null; firstName: string | null };
   children?: any;
   hideNav?: boolean;
 }
@@ -21,9 +26,11 @@ export const PageShell: FC<PageShellProps> = (props) => {
     title,
     description = "Shareable, privacy-first public dashboards for Splitwise groups.",
     head,
+    user,
     children,
     hideNav,
   } = props;
+  const initial = (user?.firstName?.trim().charAt(0) || "?").toUpperCase();
   return (
     <html lang="en">
       <head>
@@ -43,7 +50,9 @@ export const PageShell: FC<PageShellProps> = (props) => {
       </head>
       <body>
         <div class="shell">
-          {hideNav ? null : (
+          {hideNav ? (
+            null
+          ) : (
             <header class="topbar">
               <div class="container">
                 <a class="logo" href="/">
@@ -52,9 +61,31 @@ export const PageShell: FC<PageShellProps> = (props) => {
                   </span>
                   SplitViewer
                 </a>
-                <nav class="navlinks" aria-label="Main">
+                <div class="navlinks">
                   <a href="/support">Support</a>
-                </nav>
+                  {user ? (
+                    <details class="usermenu">
+                      <summary aria-label="Account menu">
+                        {user.avatarUrl ? (
+                          <img class="avatar" src={user.avatarUrl} alt="" />
+                        ) : (
+                          <span class="avatar avatar--fallback" aria-hidden="true">
+                            {initial}
+                          </span>
+                        )}
+                        {user.firstName ? (
+                          <span class="uname">{user.firstName}</span>
+                        ) : null}
+                        <span class="caret" aria-hidden="true">▾</span>
+                      </summary>
+                      <div class="menu-pop">
+                        <form method="post" action="/auth/logout">
+                          <button class="btn" type="submit">Log out</button>
+                        </form>
+                      </div>
+                    </details>
+                  ) : null}
+                </div>
               </div>
             </header>
           )}
