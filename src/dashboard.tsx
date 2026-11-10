@@ -1,22 +1,18 @@
-// Organizer dashboard: live group list + share controls. Minimal plain-CSS
-// (shared style with the future public view), no external requests.
+// Organizer dashboard: live group list + share controls, on the shared shell.
+// Local CSS covers only the table layout — tokens live in src/ui/styles.ts.
 import { Hono } from "hono";
 import { decAccessToken, requireSession } from "./middleware";
 import { fetchGroups, SplitwiseAuthError } from "./lib/splitwise";
+import { PageShell, Flash } from "./ui/components";
 import type { AppEnv, UserRow } from "./types";
 
-const STYLE = `
-  body { font-family: system-ui, sans-serif; max-width: 46rem; margin: 2rem auto; padding: 0 1rem; color: #1a1a1a; }
-  header { display: flex; justify-content: space-between; align-items: center; }
+const TABLE_STYLE = `
   table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
-  th, td { text-align: left; padding: .5rem .6rem; border-bottom: 1px solid #e2e2e2; }
-  .badge { font-size: .8rem; padding: .15rem .5rem; border-radius: 999px; }
-  .on { background: #dcf5e0; color: #1a5c25; } .off { background: #eee; color: #555; }
-  button { border: 1px solid #bbb; background: #fff; border-radius: 6px; padding: .35rem .8rem; cursor: pointer; }
-  button.rev { border-color: #d66; color: #a22; }
-  code { background: #f4f4f4; padding: .1rem .35rem; border-radius: 4px; font-size: .85rem; }
-  .flash { padding: .5rem .8rem; border-radius: 6px; background: #eef7ff; margin: 1rem 0; }
-  .flash.err { background: #fdecec; }
+  th, td { text-align: left; padding: .5rem .6rem; border-bottom: 1px solid var(--line); }
+  td { font-variant-numeric: tabular-nums; }
+  .rev { border-color: #d9a1a1; color: #a22; }
+  .url-cell code { font-size: .85rem; }
+  /* PageShell already ships .badge/.btn/.flash tokens; keep only table rules */
 `;
 
 const FLASH_MSGS: Record<string, string> = {
@@ -52,14 +48,16 @@ export const dashboard = new Hono<AppEnv>()
         // Token no longer accepted: show reconnect page instead of a 500.
         // Auto-refresh logic is Phase 6.
         return c.html(
-          <html>
-            <head><title>Reconnect Splitwise</title></head>
-            <body style="font-family:system-ui,sans-serif;max-width:32rem;margin:4rem auto;padding:0 1rem">
-              <h1>Splitwise connection expired</h1>
+          <PageShell
+            title="Reconnect Splitwise — SplitViewer"
+            hideNav
+          >
+            <div class="card">
+              <h1 style="margin-top: 0;">Splitwise connection expired</h1>
               <p>We couldn't fetch your groups with the stored credentials.</p>
-              <p><a href="/auth/login">Reconnect your Splitwise account</a></p>
-            </body>
-          </html>,
+              <a class="btn btn--primary" href="/auth/login">Reconnect your Splitwise account</a>
+            </div>
+          </PageShell>,
         );
       }
       throw error;
@@ -82,21 +80,16 @@ export const dashboard = new Hono<AppEnv>()
     const err = c.req.query("err");
 
     return c.html(
-      <html>
-        <head>
-          <title>SplitViewer — Dashboard</title>
-          <style>{STYLE}</style>
-        </head>
-        <body>
-          <header>
-            <h1>Your Splitwise groups</h1>
-            <form method="post" action="/auth/logout">
-              <button type="submit">Log out</button>
-            </form>
-          </header>
+      <PageShell title="Your groups — SplitViewer">
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:.8rem;">
+          <h1 style="margin:.2rem 0;">Your Splitwise groups</h1>
+          <form method="post" action="/auth/logout">
+            <button class="btn" type="submit">Log out</button>
+          </form>
+        </div>
 
-          {msg && FLASH_MSGS[msg] ? <p class="flash">{FLASH_MSGS[msg]}</p> : null}
-          {err && FLASH_ERRS[err] ? <p class="flash err">{FLASH_ERRS[err]}</p> : null}
+        <Flash msg={msg && FLASH_MSGS[msg] ? FLASH_MSGS[msg] : undefined} err={err && FLASH_ERRS[err] ? FLASH_ERRS[err] : undefined} />
+        <style>{TABLE_STYLE}</style>
 
           {visibleGroups.length === 0 ? (
             <p>No groups found in your Splitwise account.</p>
@@ -119,13 +112,13 @@ export const dashboard = new Hono<AppEnv>()
                         {share?.is_active === 1 ? (
                           <form method="post" action="/api/shares/revoke">
                             <input type="hidden" name="slug" value={share.slug} />
-                            <button class="rev" type="submit">Revoke</button>
+                            <button class="btn rev" type="submit">Revoke</button>
                           </form>
                         ) : (
                           <form method="post" action="/api/shares/create">
                             <input type="hidden" name="groupId" value={g.id} />
                             <input type="hidden" name="groupName" value={g.name} />
-                            <button type="submit">Create public link</button>
+                            <button class="btn" type="submit">Create public link</button>
                           </form>
                         )}
                       </td>
@@ -135,7 +128,6 @@ export const dashboard = new Hono<AppEnv>()
               </tbody>
             </table>
           )}
-        </body>
-      </html>,
+      </PageShell>,
     );
   });

@@ -132,9 +132,12 @@ describe("GET /p/:slug", () => {
     expect(html).toContain("Trip Tuscany");
     expect(html).toContain("Marco P.");
     expect(html).toContain("20.00 EUR");
-    expect(html).not.toContain("Panzeri");
-    expect(html).not.toContain("Lovelace");
-    expect(html).not.toContain("@");
+    // Sensitive strings must not survive in content (strip CSS: `@media` etc.
+    // would otherwise false-positive the @ check).
+    const content = html.replace(/<style>[\s\S]*?<\/style>/g, "");
+    expect(content).not.toContain("Panzeri");
+    expect(content).not.toContain("Lovelace");
+    expect(content).not.toContain("@");
   });
 
   it("serves stale cache when revalidation fails (401 token)", async () => {
