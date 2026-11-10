@@ -34,14 +34,17 @@ const BASE = `
   *, *::before, *::after { box-sizing: border-box; }
   body {
     margin: 0;
-    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    font-family: "Lato", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
     background: var(--soft);
     color: var(--ink);
     line-height: 1.55;
   }
+  h1, h2, h3, .logo, .btn, .btn--primary, .badge, dt {
+    font-family: "Montserrat", "Lato", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
   a { color: var(--green-dark); }
   code { background: var(--soft); padding: .1rem .4rem; border-radius: 6px; font-variant-numeric: tabular-nums; }
-  img { max-width: 100%; border-radius: var(--radius-card); box-shadow: var(--shadow); }
+  img { max-width: 100%; height: auto; border-radius: var(--radius-card); box-shadow: var(--shadow); }
   :focus-visible { outline: 2px solid var(--green); outline-offset: 2px; border-radius: 4px; }
 `;
 
@@ -98,6 +101,8 @@ const HERO = `
   .hero .cta { display: flex; gap: .8rem; justify-content: center; flex-wrap: wrap; }
   .steps { display: grid; gap: 1rem; grid-template-columns: repeat(3, 1fr); }
   @media (max-width: 640px) { .steps { grid-template-columns: 1fr; } }
+  /* The sibling .card margin breaks grid row alignment - neutralize in steps */
+  .steps .card { margin-top: 0; }
   .step { text-align: center; padding: 1.2rem 1rem; }
   .step .n { display: inline-flex; width: 2.1rem; height: 2.1rem; border-radius: 999px;
              background: var(--green); color: #fff; font-weight: 700; align-items: center;

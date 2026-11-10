@@ -31,6 +31,13 @@ export const PageShell: FC<PageShellProps> = (props) => {
         <meta name="description" content={description} />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta name="color-scheme" content="light dark" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
+        {/* Splitwise's own type stack (their attributions): Montserrat display, Lato body */}
+        <link
+          rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&family=Lato:wght@400;700&display=swap"
+        />
         {head}
         <style>{APP_STYLE}</style>
       </head>
