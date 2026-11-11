@@ -39,8 +39,14 @@ const BASE = `
     color: var(--ink);
     line-height: 1.55;
   }
-  h1, h2, h3, .logo, .btn, .btn--primary, .badge, dt {
+  h1, h2, h3, .logo, .badge, dt {
     font-family: "Montserrat", "Lato", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  /* Buttons are app-UI, not display type: Lato like the body (Splitwise's own
+     product rule — Montserrat is reserved for marketing headings). This also
+     keeps every button in ONE font regardless of UA form-control defaults. */
+  .btn, .usermenu summary, .navlinks a {
+    font-family: "Lato", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   }
   a { color: var(--green-dark); }
   code { background: var(--soft); padding: .1rem .4rem; border-radius: 6px; font-variant-numeric: tabular-nums; }
@@ -55,7 +61,12 @@ const LAYOUT = `
 `;
 
 const HEADER_FOOTER = `
-  .topbar { background: var(--paper); border-bottom: 1px solid var(--line); }
+  .topbar {
+    background: var(--paper); border-bottom: 1px solid var(--line);
+    position: sticky; top: 0; z-index: 30;
+    /* Extend under the notch (needs viewport-fit=cover in the meta viewport). */
+    padding-top: env(safe-area-inset-top);
+  }
   .topbar .container { display: flex; align-items: center; justify-content: space-between; height: 3.4rem; }
   .logo { font-weight: 800; font-size: 1.15rem; text-decoration: none; color: var(--ink);
           display: flex; align-items: center; gap: .45rem; }
