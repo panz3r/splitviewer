@@ -343,3 +343,6 @@ plans/
 
 # Wrangler local artifacts
 .wrangler/
+
+# Local Chromium installation
+chromium/
