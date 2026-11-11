@@ -2,10 +2,10 @@
 
 ## Status
 
-- **`v0.1.0-mvp` + UI v1 shipped on `main` and pushed to https://github.com/panz3r/splitviewer** (2026-11-10, worker version `c791936c`). Design system in `src/ui/` (tokens, PageShell, Montserrat/Lato type pairing per Splitwise's own attributions, dark-mode aware), real homepage with randomized fake-data example card (`/example-card.png`), `/support` FAQ with takedown path, CONTRIBUTING.md + SUPPORT.md. Repo now has a public GitHub remote + v0.1.0-mvp tag. Deployed at https://splitviewer.mattiapanzeri.workers.dev.
-- Hard-won gotchas (see per-phase notes in `plans/` for full context): cookies derive `Secure` from the request protocol (Safari refuses it on http://localhost); sign sessions with the stored row id — always use `upsertUser()` (`src/lib/users.ts`); OG rendering requires `cache.setExecutionContext()` first (`src/og.tsx`).
+- **`v0.1.0-mvp` + UI v1 + M4 polish shipped on `main`, pushed to https://github.com/panz3r/splitviewer** (2026-11-11, worker version `e3120914`). Design system in `src/ui/` (tokens, PageShell, Montserrat/Lato pairing, dark-mode aware, sticky safe-area header, account menu with avatar), dashboard group cards with Public/Private/Archived sections + Web Share button + toast, `/support`, real homepage with randomized fake-data example card. Chrome DevTools MCP now used for visual checks (clean console on all routes; login blocked by Splitwise bot protection — user verifies dashboard visuals manually). Deployed at https://splitviewer.mattiapanzeri.workers.dev.
+- Hard-won gotchas (see per-phase notes in `plans/` for full context): cookies derive `Secure` from the request protocol (Safari refuses it on http://localhost); sign sessions with the stored row id — always use `upsertUser()` (`src/lib/users.ts`); OG rendering requires `cache.setExecutionContext()` first (`src/og.tsx`); **hono/jsx escapes string children** — inline `<script>`/`<style>` content MUST go through `dangerouslySetInnerHTML`/unquoted CSS (`src/dashboard.tsx`, unquoted font stacks in `src/ui/styles.ts`); DOCTYPE is not automatic (`raw()` in PageShell); Hono middleware/composition is registration-ordered.
 - `plans/Splitwise Public Dashboards Implementation Plan.md` is the source of truth for architecture, phases, and scope. Per-phase execution records live in `plans/` (gitignored, not committed).
-- Stack as built: Cloudflare Workers + Hono SSR, Cloudflare D1 (EU jurisdiction), `@cf-wasm/og` for OG images, AES-256-GCM via Web Crypto, vitest workers integration (70 tests).
+- Stack as built: Cloudflare Workers + Hono SSR, Cloudflare D1 (EU jurisdiction), `@cf-wasm/og` for OG images, AES-256-GCM via Web Crypto, vitest workers integration (75 tests).
 
 ## Non-obvious product constraints
 
