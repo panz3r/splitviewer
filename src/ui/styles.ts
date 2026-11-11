@@ -34,19 +34,19 @@ const BASE = `
   *, *::before, *::after { box-sizing: border-box; }
   body {
     margin: 0;
-    font-family: "Lato", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    font-family: Lato, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
     background: var(--soft);
     color: var(--ink);
     line-height: 1.55;
   }
   h1, h2, h3, .logo, .badge, dt {
-    font-family: "Montserrat", "Lato", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    font-family: Montserrat, Lato, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
   }
   /* Buttons are app-UI, not display type: Lato like the body (Splitwise's own
      product rule — Montserrat is reserved for marketing headings). This also
      keeps every button in ONE font regardless of UA form-control defaults. */
   .btn, .usermenu summary, .navlinks a {
-    font-family: "Lato", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    font-family: Lato, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
   }
   a { color: var(--green-dark); }
   code { background: var(--soft); padding: .1rem .4rem; border-radius: 6px; font-variant-numeric: tabular-nums; }
