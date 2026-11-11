@@ -225,6 +225,10 @@ function dashboardPage(c: { env: AppEnv["Bindings"]; req: { url: string; query: 
     return {
       title: t.dash.title,
       lang,
+      langToggle: {
+        href: lang === "it" ? "/dashboard" : "/it/dashboard",
+        lang: lang === "it" ? "en" : "it",
+      },
       user: { avatarUrl: user.avatar_url, firstName: user.first_name },
       children: (
         <>
