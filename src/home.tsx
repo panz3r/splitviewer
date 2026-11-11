@@ -18,7 +18,7 @@ function homePage(c: { req: { url: string } }, lang: Lang): PageShellProps {
     lang,
     langToggle: {
       href: lang === "it" ? "/" : "/it",
-      label: t.nav.langToggle,
+      lang: lang === "it" ? "en" : "it",
     },
     hreflang: [
       { lang: "en", href: `${origin}/` },

@@ -74,6 +74,8 @@ const HEADER_FOOTER = `
   .navlinks { display: flex; gap: 1.1rem; align-items: center; }
   .navlinks a { color: var(--muted); text-decoration: none; font-size: .95rem; }
   .navlinks a:hover { color: var(--green-dark); }
+  .lang-toggle { display: inline-flex; align-items: center; }
+  .flag { display: inline-block; border-radius: 2px; outline: 1px solid var(--line); }
   /* Header account menu (native <details>, no JS) */
   .usermenu { position: relative; }
   .usermenu summary { display: flex; align-items: center; gap: .5rem; cursor: pointer;

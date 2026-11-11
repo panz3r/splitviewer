@@ -16,7 +16,7 @@ function supportPage(c: { req: { url: string } }, lang: Lang): PageShellProps {
     lang,
     langToggle: {
       href: lang === "it" ? "/support" : "/it/support",
-      label: t.nav.langToggle,
+      lang: lang === "it" ? "en" : "it",
     },
     hreflang: [
       { lang: "en", href: `${origin}/support` },

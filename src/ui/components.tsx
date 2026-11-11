@@ -16,8 +16,8 @@ export interface PageShellProps {
   head?: any;
   /** Page language: sets <html lang> + header/footer copy. Default "en". */
   lang?: Lang;
-  /** Language toggle rendered in the header (e.g. "Italiano" → /it). */
-  langToggle?: { href: string; label: string };
+  /** Language toggle rendered in the header — a flag icon linking to the alt version. */
+  langToggle?: { href: string; lang: Lang };
   /** hreflang alternates for SEO (absolute URLs). x-default → EN is added automatically. */
   hreflang?: Array<{ lang: Lang; href: string }>;
   /**
@@ -43,6 +43,8 @@ export const PageShell: FC<PageShellProps> = (props) => {
   } = props;
   const t = getDict(lang);
   const initial = (user?.firstName?.trim().charAt(0) || "?").toUpperCase();
+  const logoHref = lang === "it" ? "/it" : "/";
+  const toggleAria = lang === "it" ? "English" : "Italiano";
   // <!DOCTYPE html> is NOT added automatically by hono/jsx — without it every
   // page renders in Quirks Mode (layout bugs, console issues).
   return (
@@ -81,7 +83,7 @@ export const PageShell: FC<PageShellProps> = (props) => {
           ) : (
             <header class="topbar">
               <div class="container">
-                <a class="logo" href="/">
+                <a class="logo" href={logoHref}>
                   <span class="leaf" aria-hidden="true">
                     ⇄
                   </span>
@@ -90,8 +92,14 @@ export const PageShell: FC<PageShellProps> = (props) => {
                 <div class="navlinks">
                   <a href={lang === "it" ? "/it/support" : "/support"}>{t.nav.support}</a>
                   {langToggle ? (
-                    <a class="lang-toggle" href={langToggle.href} hreflang={lang === "it" ? "en" : "it"}>
-                      {langToggle.label}
+                    <a
+                      class="lang-toggle"
+                      href={langToggle.href}
+                      hreflang={langToggle.lang}
+                      aria-label={t.nav.langSwitchAria}
+                      title={toggleAria}
+                    >
+                      <FlagIcon lang={langToggle.lang} />
                     </a>
                   ) : null}
                   {user ? (
@@ -148,4 +156,28 @@ export function Flash({ msg, err }: { msg?: string; err?: string }) {
 
 export function Badge({ on }: { on: boolean }) {
   return <span class={`badge ${on ? "" : "badge--off"}`}>{on ? "public" : "off"}</span>;
+}
+
+/** Tiny inline-SVG flags (Windows renders flag emoji as letter codes, so SVGs
+ * are the reliable cross-platform choice). */
+export function FlagIcon({ lang }: { lang: Lang }) {
+  if (lang === "it") {
+    return (
+      <svg class="flag" viewBox="0 0 3 2" width="20" height="14" aria-hidden="true">
+        <rect width="1" height="2" fill="#009246" />
+        <rect x="1" width="1" height="2" fill="#fff" />
+        <rect x="2" width="1" height="2" fill="#ce2b37" />
+      </svg>
+    );
+  }
+  // Simplified Union Jack
+  return (
+    <svg class="flag" viewBox="0 0 60 30" width="20" height="14" aria-hidden="true">
+      <rect width="60" height="30" fill="#012169" />
+      <path d="M0,0 L60,30 M60,0 L0,30" stroke="#fff" stroke-width="6" />
+      <path d="M0,0 L60,30 M60,0 L0,30" stroke="#C8102E" stroke-width="2.5" />
+      <path d="M30,0 V30 M0,15 H60" stroke="#fff" stroke-width="10" />
+      <path d="M30,0 V30 M0,15 H60" stroke="#C8102E" stroke-width="6" />
+    </svg>
+  );
 }

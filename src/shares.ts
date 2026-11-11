@@ -6,6 +6,7 @@ import type { Context } from "hono";
 import { nanoid } from "nanoid";
 import { requireSession } from "./middleware";
 import { deleteCache } from "./lib/cache";
+import type { Lang } from "./i18n";
 import type { AppEnv } from "./types";
 
 export const SLUG_LENGTH = 16;
@@ -17,6 +18,7 @@ function isJson(c: Context): boolean {
 interface CreateInput {
   groupId: string;
   groupName: string;
+  lang: Lang; // for post-action redirect (dashboard language)
 }
 
 async function parseCreateInput(c: Context<AppEnv>): Promise<CreateInput | null> {
@@ -28,6 +30,7 @@ async function parseCreateInput(c: Context<AppEnv>): Promise<CreateInput | null>
       return {
         groupId,
         groupName: typeof raw.groupName === "string" && raw.groupName ? raw.groupName : `Group ${groupId}`,
+        lang: raw.lang === "it" ? "it" : "en",
       };
     }
     const form = await c.req.parseBody();
@@ -36,6 +39,7 @@ async function parseCreateInput(c: Context<AppEnv>): Promise<CreateInput | null>
     return {
       groupId,
       groupName: typeof form.groupName === "string" && form.groupName !== "" ? form.groupName : `Group ${groupId}`,
+      lang: form.lang === "it" ? "it" : "en",
     };
   } catch {
     return null;
@@ -44,6 +48,7 @@ async function parseCreateInput(c: Context<AppEnv>): Promise<CreateInput | null>
 
 interface RevokeInput {
   slug: string;
+  lang: Lang;
 }
 
 async function parseRevokeInput(c: Context<AppEnv>): Promise<RevokeInput | null> {
@@ -51,15 +56,17 @@ async function parseRevokeInput(c: Context<AppEnv>): Promise<RevokeInput | null>
     if (isJson(c)) {
       const raw = (await c.req.json()) as Record<string, unknown>;
       const slug = typeof raw.slug === "string" && raw.slug ? raw.slug : "";
-      return slug ? { slug } : null;
+      return slug ? { slug, lang: raw.lang === "it" ? "it" : "en" } : null;
     }
     const form = await c.req.parseBody();
     const slug = typeof form.slug === "string" && form.slug !== "" ? form.slug : "";
-    return slug ? { slug } : null;
+    return slug ? { slug, lang: form.lang === "it" ? "it" : "en" } : null;
   } catch {
     return null;
   }
 }
+
+const dashPath = (lang: Lang) => (lang === "it" ? "/it/dashboard" : "/dashboard");
 
 function invalid(c: Context<AppEnv>) {
   return isJson(c)
@@ -112,7 +119,7 @@ export const shares = new Hono<AppEnv>()
     if (isJson(c)) {
       return c.json({ ok: true, slug, url: `${origin}/p/${slug}` }, 201);
     }
-    return c.redirect("/dashboard?msg=created", 303);
+    return c.redirect(`${dashPath(input.lang)}?msg=created`, 303);
   })
 
   .post("/api/shares/revoke", async (c) => {
@@ -128,12 +135,12 @@ export const shares = new Hono<AppEnv>()
     if ((res.meta.changes ?? 0) === 0) {
       return isJson(c)
         ? c.json({ ok: false, error: "not_found" }, 404)
-        : c.redirect("/dashboard?err=not_found", 303);
+        : c.redirect(`${dashPath(input.lang)}?err=not_found`, 303);
     }
     // Revocation must be instant: the public page also checks is_active, but
     // dropping the cache makes "revoked" and "missing" truly identical.
     await deleteCache(c.env, input.slug);
     return isJson(c)
       ? c.json({ ok: true, active: false })
-      : c.redirect("/dashboard?msg=revoked", 303);
+      : c.redirect(`${dashPath(input.lang)}?msg=revoked`, 303);
   });
