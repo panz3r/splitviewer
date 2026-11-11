@@ -93,6 +93,17 @@ describe("src/index.tsx", () => {
 		expect(text).toContain('href="http://example.com/it"');
 	});
 
+	it("GET /it redirects authenticated users to the IT dashboard (language-aware logo round-trip)", async () => {
+		const { signSession } = await import("../src/lib/session");
+		const cookie = `sw_session=${await signSession("it-user", env.SESSION_SECRET)}`;
+		const request = new IncomingRequest("http://example.com/it", { headers: { Cookie: cookie } });
+		const ctx = createExecutionContext();
+		const response = await worker.fetch(request, env, ctx);
+		await waitOnExecutionContext(ctx);
+		expect(response.status).toBe(302);
+		expect(response.headers.get("Location")).toBe("/it/dashboard");
+	});
+
 	it("GET /it/support renders the Italian FAQ", async () => {
 		const request = new IncomingRequest("http://example.com/it/support");
 		const ctx = createExecutionContext();

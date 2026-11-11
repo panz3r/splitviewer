@@ -132,7 +132,9 @@ export const homeRoutes = new Hono<AppEnv>()
   .get("/it", async (c) => {
     const userId = await getSessionUserId(c)
     if (userId) {
-      return c.redirect('/dashboard', 302)
+      // Language-aware: from the IT homepage, logged-in users land on the IT
+      // dashboard (logo click from /it/dashboard must round-trip).
+      return c.redirect('/it/dashboard', 302)
     }
     return c.html(<PageShell {...homePage(c, "it")} />)
   })
