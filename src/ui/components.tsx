@@ -1,6 +1,7 @@
 // Shared UI components (hono/jsx). Every page renders through PageShell so
 // tokens/headers/footers stay consistent across routes.
 import type { FC } from "hono/jsx";
+import { raw } from "hono/html";
 import { APP_STYLE } from "./styles";
 
 /** Single URL constant; flip here if the repo moves. */
@@ -12,6 +13,11 @@ interface PageShellProps {
   description?: string;
   /** Extra <head> content (e.g. OG meta), rendered inside the real head. */
   head?: any;
+  /**
+   * Session widget for the header (avatar + first name + Log-out menu, native
+   * <details> popup so it works without JS).
+   */
+  user?: { avatarUrl: string | null; firstName: string | null };
   children?: any;
   hideNav?: boolean;
 }
@@ -21,15 +27,21 @@ export const PageShell: FC<PageShellProps> = (props) => {
     title,
     description = "Shareable, privacy-first public dashboards for Splitwise groups.",
     head,
+    user,
     children,
     hideNav,
   } = props;
+  const initial = (user?.firstName?.trim().charAt(0) || "?").toUpperCase();
+  // <!DOCTYPE html> is NOT added automatically by hono/jsx — without it every
+  // page renders in Quirks Mode (layout bugs, console issues).
   return (
-    <html lang="en">
+    <>
+      {raw("<!DOCTYPE html>")}
+      <html lang="en">
       <head>
         <title>{title}</title>
         <meta name="description" content={description} />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
         <meta name="color-scheme" content="light dark" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
@@ -43,7 +55,9 @@ export const PageShell: FC<PageShellProps> = (props) => {
       </head>
       <body>
         <div class="shell">
-          {hideNav ? null : (
+          {hideNav ? (
+            null
+          ) : (
             <header class="topbar">
               <div class="container">
                 <a class="logo" href="/">
@@ -52,9 +66,31 @@ export const PageShell: FC<PageShellProps> = (props) => {
                   </span>
                   SplitViewer
                 </a>
-                <nav class="navlinks" aria-label="Main">
+                <div class="navlinks">
                   <a href="/support">Support</a>
-                </nav>
+                  {user ? (
+                    <details class="usermenu">
+                      <summary aria-label="Account menu">
+                        {user.avatarUrl ? (
+                          <img class="avatar" src={user.avatarUrl} alt="" />
+                        ) : (
+                          <span class="avatar avatar--fallback" aria-hidden="true">
+                            {initial}
+                          </span>
+                        )}
+                        {user.firstName ? (
+                          <span class="uname">{user.firstName}</span>
+                        ) : null}
+                        <span class="caret" aria-hidden="true">▾</span>
+                      </summary>
+                      <div class="menu-pop">
+                        <form method="post" action="/auth/logout">
+                          <button class="btn" type="submit">Log out</button>
+                        </form>
+                      </div>
+                    </details>
+                  ) : null}
+                </div>
               </div>
             </header>
           )}
@@ -77,6 +113,7 @@ export const PageShell: FC<PageShellProps> = (props) => {
         </div>
       </body>
     </html>
+    </>
   );
 };
 

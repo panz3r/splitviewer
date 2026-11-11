@@ -76,15 +76,22 @@ describe("GET /auth/callback", () => {
 });
 
 describe("GET /auth/logout", () => {
-  it("clears the session cookie and redirects home", async () => {
-    const res = await fetchRoute("/auth/logout");
-    expect(res.status).toBe(302);
-    expect(res.headers.get("Location")).toBe("/");
-    const cookie = res.headers.get("Set-Cookie") ?? "";
-    expect(cookie).toContain("sw_session=");
-    // expired cookie → cleared
-    expect(cookie.toLowerCase()).toContain("max-age=0");
-  });
+	it("clears the session cookie and redirects home (GET)", async () => {
+		const res = await fetchRoute("/auth/logout");
+		expect(res.status).toBe(302);
+		expect(res.headers.get("Location")).toBe("/");
+		const cookie = res.headers.get("Set-Cookie") ?? "";
+		expect(cookie).toContain("sw_session=");
+		// expired cookie → cleared
+		expect(cookie.toLowerCase()).toContain("max-age=0");
+	});
+
+	it("also accepts POST (the header menu submits a form)", async () => {
+		const res = await fetchRoute("/auth/logout", { method: "POST" });
+		expect(res.status).toBe(302);
+		expect(res.headers.get("Location")).toBe("/");
+		expect((res.headers.get("Set-Cookie") ?? "").toLowerCase()).toContain("max-age=0");
+	});
 });
 
 describe("state/session helpers against env secret", () => {

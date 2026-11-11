@@ -34,13 +34,19 @@ const BASE = `
   *, *::before, *::after { box-sizing: border-box; }
   body {
     margin: 0;
-    font-family: "Lato", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    font-family: Lato, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
     background: var(--soft);
     color: var(--ink);
     line-height: 1.55;
   }
-  h1, h2, h3, .logo, .btn, .btn--primary, .badge, dt {
-    font-family: "Montserrat", "Lato", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  h1, h2, h3, .logo, .badge, dt {
+    font-family: Montserrat, Lato, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  }
+  /* Buttons are app-UI, not display type: Lato like the body (Splitwise's own
+     product rule — Montserrat is reserved for marketing headings). This also
+     keeps every button in ONE font regardless of UA form-control defaults. */
+  .btn, .usermenu summary, .navlinks a {
+    font-family: Lato, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
   }
   a { color: var(--green-dark); }
   code { background: var(--soft); padding: .1rem .4rem; border-radius: 6px; font-variant-numeric: tabular-nums; }
@@ -55,14 +61,35 @@ const LAYOUT = `
 `;
 
 const HEADER_FOOTER = `
-  .topbar { background: var(--paper); border-bottom: 1px solid var(--line); }
+  .topbar {
+    background: var(--paper); border-bottom: 1px solid var(--line);
+    position: sticky; top: 0; z-index: 30;
+    /* Extend under the notch (needs viewport-fit=cover in the meta viewport). */
+    padding-top: env(safe-area-inset-top);
+  }
   .topbar .container { display: flex; align-items: center; justify-content: space-between; height: 3.4rem; }
   .logo { font-weight: 800; font-size: 1.15rem; text-decoration: none; color: var(--ink);
           display: flex; align-items: center; gap: .45rem; }
   .logo .leaf { color: var(--green); }
-  .navlinks { display: flex; gap: 1.1rem; }
+  .navlinks { display: flex; gap: 1.1rem; align-items: center; }
   .navlinks a { color: var(--muted); text-decoration: none; font-size: .95rem; }
   .navlinks a:hover { color: var(--green-dark); }
+  /* Header account menu (native <details>, no JS) */
+  .usermenu { position: relative; }
+  .usermenu summary { display: flex; align-items: center; gap: .5rem; cursor: pointer;
+                      list-style: none; }
+  .usermenu summary::-webkit-details-marker { display: none; }
+  .usermenu .avatar { width: 2rem; height: 2rem; border-radius: 50%; object-fit: cover;
+                      border: 1px solid var(--line); }
+  .usermenu .avatar--fallback { display: inline-flex; align-items: center; justify-content: center;
+                                background: var(--green-soft); color: var(--green-dark);
+                                font-weight: 700; }
+  .usermenu .caret { color: var(--muted); font-size: .7rem; }
+  .usermenu .menu-pop { position: absolute; right: 0; top: calc(100% + .45rem);
+                        min-width: 9.5rem; z-index: 10; background: var(--paper);
+                        border: 1px solid var(--line); border-radius: var(--radius-btn);
+                        box-shadow: var(--shadow); padding: .5rem; }
+  .usermenu .menu-pop .btn { width: 100%; box-sizing: border-box; }
   .footer { border-top: 1px solid var(--line); padding: 1.2rem 0 2rem; color: var(--muted); font-size: .88rem; }
   .footer .container { display: flex; flex-wrap: wrap; gap: .8rem 1.4rem; justify-content: space-between;
                        align-items: center; }
@@ -72,10 +99,15 @@ const HEADER_FOOTER = `
 const COMPONENTS = `
   .btn {
     display: inline-flex; align-items: center; justify-content: center; gap: .45rem;
-    padding: .6rem 1.1rem; border-radius: var(--radius-btn); border: 1px solid var(--line);
-    background: var(--paper); color: var(--ink); font-weight: 600; font-size: .95rem;
-    text-decoration: none; cursor: pointer;
+    padding: 0 1.1rem; min-height: 2.55rem; height: 2.55rem; border-radius: var(--radius-btn);
+    border: 1px solid var(--line); background: var(--paper); color: var(--ink); font-weight: 600;
+    font-size: .95rem; text-decoration: none; cursor: pointer;
   }
+  /* Uniform action rows: forms must not stretch their buttons */
+  form .btn { height: 2.55rem; }
+  .actions { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; margin-top: .7rem; }
+  .actions .neg { margin-left: auto; }
+  .actions form { display: inline-flex; margin: 0; }
   .btn--primary { background: var(--green); border-color: var(--green); color: #fff; }
   .btn--primary:hover { background: var(--green-dark); }
   .btn--danger { border-color: #d9a1a1; color: var(--danger); }
@@ -104,6 +136,20 @@ const HERO = `
   /* The sibling .card margin breaks grid row alignment - neutralize in steps */
   .steps .card { margin-top: 0; }
   .step { text-align: center; padding: 1.2rem 1rem; }
+  /* Dashboard: group cards grid (M4) */
+  .ggrid { display: grid; gap: 1rem; grid-template-columns: 1fr; align-items: stretch; }
+  @media (min-width: 768px) { .ggrid { grid-template-columns: 1fr 1fr; } }
+  /* Sibling .card margin must not offset the second grid column */
+  .ggrid .card { margin-top: 0; height: 100%; }
+  .gcard .row { display: flex; justify-content: space-between; align-items: center; gap: .8rem; }
+  .gcard .gname { font-weight: 700; }
+  /* Public page ledger (M4) */
+  .pub-title { font-size: clamp(1.5rem, 4vw, 2rem); margin: .2rem 0 .2rem; }
+  .pub-sub { color: var(--muted); font-size: .9rem; margin: 0 0 1.2rem; }
+  .cur h2 { display: flex; align-items: center; gap: .5rem; margin: .2rem 0 .4rem; font-size: 1.05rem; }
+  .ledger td { padding: .6rem 0; border-bottom: 1px solid var(--line); }
+  .ledger tr:last-child td { border-bottom: none; }
+  .ledger tbody tr:hover td { background: var(--soft); }
   .step .n { display: inline-flex; width: 2.1rem; height: 2.1rem; border-radius: 999px;
              background: var(--green); color: #fff; font-weight: 700; align-items: center;
              justify-content: center; margin-bottom: .6rem; }

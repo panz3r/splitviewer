@@ -225,3 +225,19 @@ describe("form-encoded flow (dashboard buttons)", () => {
     expect(res.headers.get("Location")).toBe("/dashboard?msg=revoked");
   });
 });
+
+describe("dashboard cards (M4)", () => {
+  it("shows the reconnect page (not 5xx) when Splitwise rejects the stored token", async () => {
+    // Dashboard content with cards requires a live, valid token — verified in
+    // the browser (visual pass). With a test fixture token, Splitwise 401s
+    // deterministically, which must render the friendly reconnect page.
+    const user = await insertUser("31119");
+    const res = await fetchRoute("/dashboard", {
+      headers: { Cookie: await sessionCookie(user.id) },
+    });
+    expect(res.status).toBe(200);
+    const html = await res.text();
+    expect(html).toContain("Splitwise connection expired");
+    expect(html).not.toContain("data-copy");
+  });
+});

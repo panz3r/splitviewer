@@ -10,7 +10,7 @@ export async function requireSession(c: Context<AppEnv>, next: Next) {
   let row: UserRow | null = null;
   if (userId) {
     row = await c.env.DB.prepare(
-      "SELECT id, splitwise_user_id, encrypted_access_token, token_expiry FROM users WHERE id = ?1",
+      "SELECT id, splitwise_user_id, encrypted_access_token, token_expiry, avatar_url, first_name FROM users WHERE id = ?1",
     )
       .bind(userId)
       .first<UserRow>();

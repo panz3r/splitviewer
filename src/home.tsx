@@ -64,7 +64,6 @@ homeRoutes.get('/', async (c) => {
           alt="Sample SplitViewer dashboard card with fake data"
           width="1200"
           height="630"
-          loading="lazy"
         />
         <p class="muted small" style="margin-top: .8rem;">
           Sample with fake data — regenerated on each visit, so you'll see different names
