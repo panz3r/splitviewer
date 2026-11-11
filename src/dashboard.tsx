@@ -1,25 +1,13 @@
-// Organizer dashboard: group cards with share actions, on the shared shell.
-// The copy-link button is the only client JS in the app (dashboard is the
-// authenticated surface; public pages stay JS-free by design).
+// Organizer dashboard (EN at /dashboard, IT at /it/dashboard): group cards
+// with share actions, on the shared shell. The share-button script is the
+// only client JS in the app (public pages stay JS-free by design).
 import { Hono } from "hono";
 import { decAccessToken, requireSession } from "./middleware";
 import { fetchGroups, SplitwiseAuthError, type SplitwiseGroup } from "./lib/splitwise";
-import { PageShell, Flash } from "./ui/components";
+import { getDict, type Dict, type Lang } from "./i18n";
+import { PageShell, Flash, type PageShellProps } from "./ui/components";
 import type { AppEnv, UserRow } from "./types";
 
-const FLASH_MSGS: Record<string, string> = {
-  created: "Public link generated — copy it below.",
-  revoked: "Share revoked — the public link is dead.",
-};
-const FLASH_ERRS: Record<string, string> = {
-  invalid_request: "That didn't look right — try again.",
-  not_found: "No such share (or it belongs to another account).",
-  share_write_failed: "Couldn't save the share. Please retry.",
-};
-
-  // Scripts produced via hono/jsx children get HTML-escaped (broken JS!) —
-  // they MUST be emitted with dangerouslySetInnerHTML (see script-escape-check
-  // note in plans/m4-ux-polish.md). Toast feedback included.
 const SHARE_SCRIPT = `
   function showToast(msg) {
     var t = document.getElementById("toast");
@@ -37,23 +25,22 @@ const SHARE_SCRIPT = `
   }
   document.querySelectorAll("[data-share]").forEach(function (btn) {
     var url = btn.getAttribute("data-share");
+    var labels = JSON.parse(btn.getAttribute("data-labels"));
     var supportsShare = typeof navigator.share === "function";
-    btn.textContent = supportsShare ? "Share" : "Share URL";
+    btn.textContent = supportsShare ? labels.share : labels.shareNoWebShare;
     btn.addEventListener("click", function () {
       if (supportsShare) {
         navigator.share({ title: "SplitViewer", url: url }).then(
-          function () { showToast("Shared — thanks!"); },
+          function () { showToast(labels.sharedToast); },
           function (err) {
-            // Cancelling the sheet is not an error the user must see.
-            if (err && err.name !== "AbortError") showToast("Could not share");
+            if (err && err.name !== "AbortError") showToast(labels.couldNotShare);
           }
         );
       } else {
         navigator.clipboard.writeText(url).then(
-          function () { showToast("Link copied to clipboard"); },
+          function () { showToast(labels.copiedToast); },
           function () {
-            btn.disabled = true;
-            showToast("Press Cmd/Ctrl+C to copy the link");
+            showToast(labels.copyFallback);
           }
         );
       }
@@ -76,15 +63,29 @@ const TOAST_STYLE = `
   .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 `;
 
-function Badge({ on }: { on: boolean }) {
-  return (
-    <span class={`badge ${on ? "" : "badge--off"}`}>{on ? "public" : "off"}</span>
-  );
+function Badge({ on, t }: { on: boolean; t: Dict }) {
+  return <span class={`badge ${on ? "" : "badge--off"}`}>{on ? t.dash.sections.public.toLowerCase() : "off"}</span>;
 }
 
-function GroupCard({ groupId, name, avatarUrl, share, origin }: { groupId: string; name: string; avatarUrl?: string; share: { slug: string; is_active: number } | undefined; origin: string }) {
+interface ShareRow {
+  slug: string;
+  is_active: number;
+}
+
+function GroupCard(
+  { groupId, name, avatarUrl, share, origin, lang, t }:
+  { groupId: string; name: string; avatarUrl?: string; share: ShareRow | undefined; origin: string; lang: Lang; t: Dict },
+) {
   const active = share?.is_active === 1;
   const url = `${origin}/p/${share?.slug ?? ""}`;
+  const labels = JSON.stringify({
+    share: t.dash.share,
+    shareNoWebShare: t.dash.shareNoWebShare,
+    sharedToast: t.dash.sharedToast,
+    couldNotShare: t.dash.couldNotShare,
+    copiedToast: t.dash.copiedToast,
+    copyFallback: t.dash.copyFallback,
+  });
   return (
     <div class="card gcard">
       <div class="row">
@@ -94,31 +95,33 @@ function GroupCard({ groupId, name, avatarUrl, share, origin }: { groupId: strin
           ) : null}
           {name}
         </span>
-        <Badge on={active} />
+        <Badge on={active} t={t} />
       </div>
       {active ? (
         <>
           {/* No-JS fallback: show the raw link so the dashboard still works
-              with scripts off; JS browsers hide it (Share covers it). */}
+              with scripts off; with JS the Share button covers it. */}
           <noscript>
             <p class="muted small" style="margin: .5rem 0; overflow-wrap: anywhere;">
               <code>{url}</code>
             </p>
           </noscript>
           <div class="actions">
-            <a class="btn btn--primary" href={url}>Open</a>
+            <a class="btn btn--primary" href={url}>{t.dash.open}</a>
             <button
               class="btn"
               type="button"
               data-share={url}
-              aria-label="Share the public link"
+              data-labels={labels}
+              aria-label={t.dash.shareAria}
             >
-              Share URL
+              {t.dash.shareNoWebShare}
             </button>
             <form method="post" action="/api/shares/revoke" class="neg">
               <input type="hidden" name="slug" value={share?.slug ?? ""} />
-              <button class="btn btn--danger" type="submit" aria-label="Revoke share">
-                Revoke
+              <input type="hidden" name="lang" value={lang} />
+              <button class="btn btn--danger" type="submit" aria-label={t.dash.revokeAria}>
+                {t.dash.revoke}
               </button>
             </form>
           </div>
@@ -127,7 +130,8 @@ function GroupCard({ groupId, name, avatarUrl, share, origin }: { groupId: strin
         <form method="post" action="/api/shares/create" style="margin-top: .8rem;">
           <input type="hidden" name="groupId" value={groupId} />
           <input type="hidden" name="groupName" value={name} />
-          <button class="btn btn--primary" type="submit">Create public link</button>
+          <input type="hidden" name="lang" value={lang} />
+          <button class="btn btn--primary" type="submit">{t.dash.create}</button>
         </form>
       )}
     </div>
@@ -150,54 +154,47 @@ function sortByLastUpdateDesc(groups: SplitwiseGroup[]): SplitwiseGroup[] {
 
 function sectionize(
   groups: SplitwiseGroup[],
-  sharesByGroupId: Map<string, { slug: string; is_active: number }>,
-  now = Date.now(),
-): { label: string; groups: SplitwiseGroup[] }[] {
+  sharesByGroupId: Map<string, ShareRow>,
+): { key: "public" | "private" | "archived"; groups: SplitwiseGroup[] }[] {
   const archived = groups.filter(
     (g) =>
       isSettled(g) &&
       typeof g.updatedAt === "string" &&
-      now - new Date(g.updatedAt).getTime() > ARCHIVE_AFTER_MS,
+      Date.now() - new Date(g.updatedAt).getTime() > ARCHIVE_AFTER_MS,
   );
   const rest = groups.filter((g) => !archived.includes(g));
-  const publicGroups = rest.filter(
-    (g) => sharesByGroupId.get(g.id)?.is_active === 1,
-  );
-  const privateGroups = rest.filter(
-    (g) => sharesByGroupId.get(g.id)?.is_active !== 1,
-  );
+  const publicGroups = rest.filter((g) => sharesByGroupId.get(g.id)?.is_active === 1);
+  const privateGroups = rest.filter((g) => sharesByGroupId.get(g.id)?.is_active !== 1);
   return [
-    { label: "Public", groups: sortByLastUpdateDesc(publicGroups) },
-    { label: "Private", groups: sortByLastUpdateDesc(privateGroups) },
-    { label: "Archived", groups: sortByLastUpdateDesc(archived) },
+    { key: "public", groups: sortByLastUpdateDesc(publicGroups) },
+    { key: "private", groups: sortByLastUpdateDesc(privateGroups) },
+    { key: "archived", groups: sortByLastUpdateDesc(archived) },
   ];
 }
 
-export const dashboard = new Hono<AppEnv>()
+function dashboardPage(c: { env: AppEnv["Bindings"]; req: { url: string; query: (k: string) => string | undefined } }, user: UserRow, lang: Lang): Promise<PageShellProps> {
+  return (async () => {
+    const t = getDict(lang);
 
-  .use("/dashboard", requireSession)
-
-  .get("/dashboard", async (c) => {
-    const user: UserRow = c.get("user");
-    const origin = new URL(c.req.url).origin;
-
-    let groups: Awaited<ReturnType<typeof fetchGroups>>;
+    let groups: SplitwiseGroup[];
     try {
       const token = await decAccessToken(user, c.env);
       groups = await fetchGroups(token);
     } catch (error) {
       if (error instanceof SplitwiseAuthError && error.status === 401) {
-        // Token no longer accepted: show reconnect page instead of a 500.
-        // Auto-refresh logic is Phase 6.
-        return c.html(
-          <PageShell title="Reconnect Splitwise — SplitViewer" hideNav>
+        // Token no longer accepted: reconnect page instead of a 500.
+        return {
+          title: `${t.dash.reconnectTitle} — SplitViewer`,
+          lang,
+          hideNav: true,
+          children: (
             <div class="card">
-              <h1 style="margin-top: 0;">Splitwise connection expired</h1>
-              <p>We couldn't fetch your groups with the stored credentials.</p>
-              <a class="btn btn--primary" href="/auth/login">Reconnect your Splitwise account</a>
+              <h1 style="margin-top: 0;">{t.dash.reconnectTitle}</h1>
+              <p>{t.dash.reconnectBody}</p>
+              <a class="btn btn--primary" href="/auth/login">{t.dash.reconnectCta}</a>
             </div>
-          </PageShell>,
-        );
+          ),
+        };
       }
       throw error;
     }
@@ -217,55 +214,79 @@ export const dashboard = new Hono<AppEnv>()
 
     const msg = c.req.query("msg");
     const err = c.req.query("err");
+    const origin = new URL(c.req.url).origin;
+    const flashMsg =
+      msg && msg in t.dash ? t.dash[msg as "flashCreated" | "flashRevoked"] : undefined;
+    const flashErr =
+      err && err in t.dash
+        ? t.dash[err as "flashInvalid" | "flashNotFound" | "flashWriteFailed"]
+        : undefined;
 
-    return c.html(
-      <PageShell
-        title="Your groups — SplitViewer"
-        user={{ avatarUrl: user.avatar_url, firstName: user.first_name }}
-      >
-        <style>{GAVATAR_STYLE}</style>
-        <style>{TOAST_STYLE}</style>
-        <Flash msg={msg && FLASH_MSGS[msg] ? FLASH_MSGS[msg] : undefined} err={err && FLASH_ERRS[err] ? FLASH_ERRS[err] : undefined} />
-
-        {visibleGroups.length === 0 ? (
-          <div class="card">
-            <p style="margin: 0;">
-              No groups found in your Splitwise account. Create one in Splitwise first,
-              then come back and refresh.
-            </p>
+    return {
+      title: t.dash.title,
+      lang,
+      user: { avatarUrl: user.avatar_url, firstName: user.first_name },
+      children: (
+        <>
+          <style>{GAVATAR_STYLE}</style>
+          <style>{TOAST_STYLE}</style>
+          <div style="display: flex; justify-content: space-between; align-items: center; gap: .8rem;">
+            <h1 style="margin: .2rem 0;">{t.dash.heading}</h1>
           </div>
-        ) : (
-          sectionize(visibleGroups, sharesByGroupId).map(
-            (section) =>
-              section.groups.length > 0 && (
-                <>
-                  <h2 class="section-title" style="font-size: 1.15rem; margin: 1.6rem 0 .8rem;">
-                    {section.label}
-                  </h2>
-                  <div class="ggrid">
-                    {section.groups.map((g) => {
-                      const share = sharesByGroupId.get(g.id);
-                      return (
-                        <GroupCard
-                          groupId={g.id}
-                          name={g.name || `Group ${g.id}`}
-                          avatarUrl={g.avatarUrl}
-                          share={share}
-                          origin={origin}
-                        />
-                      );
-                    })}
-                  </div>
-                </>
-              ),
-          )
-        )}
 
-        {/* Toast + share script. NOTE: hono/jsx escapes string children, so
-            the script MUST go through dangerouslySetInnerHTML (raw) or the
-            browser gets a syntax-error script tag. */}
-        <div id="toast" class="toast" aria-live="polite"></div>
-        <script dangerouslySetInnerHTML={{ __html: SHARE_SCRIPT }} />
-      </PageShell>,
-    );
-  });
+          <Flash msg={flashMsg} err={flashErr} />
+
+          {visibleGroups.length === 0 ? (
+            <div class="card">
+              <p style="margin: 0;">{t.dash.empty}</p>
+            </div>
+          ) : (
+            sectionize(visibleGroups, sharesByGroupId).map(
+              (section) =>
+                section.groups.length > 0 && (
+                  <>
+                    <h2 class="section-title" style="font-size: 1.15rem; margin: 1.6rem 0 .8rem;">
+                      {t.dash.sections[section.key]}
+                    </h2>
+                    <div class="ggrid">
+                      {section.groups.map((g) => {
+                        const share = sharesByGroupId.get(g.id);
+                        return (
+                          <GroupCard
+                            groupId={g.id}
+                            name={g.name || `Group ${g.id}`}
+                            avatarUrl={g.avatarUrl}
+                            share={share}
+                            origin={origin}
+                            lang={lang}
+                            t={t}
+                          />
+                        );
+                      })}
+                    </div>
+                  </>
+                ),
+            )
+          )}
+
+          {/* Toast + share script. NOTE: hono/jsx escapes string children, so
+              the script MUST go through dangerouslySetInnerHTML (raw) or the
+              browser gets a syntax-error script tag. Labels are injected as
+              data-attributes (JSON) so the script is language-agnostic. */}
+          <div id="toast" class="toast" aria-live="polite"></div>
+          <script dangerouslySetInnerHTML={{ __html: SHARE_SCRIPT }} />
+        </>
+      ),
+    };
+  })();
+}
+
+export const dashboard = new Hono<AppEnv>()
+
+  .use("/dashboard", requireSession)
+  .use("/it/dashboard", requireSession)
+
+  .get("/dashboard", async (c) =>
+    c.html(<PageShell {...(await dashboardPage(c, c.get("user"), "en"))} />))
+  .get("/it/dashboard", async (c) =>
+    c.html(<PageShell {...(await dashboardPage(c, c.get("user"), "it"))} />));

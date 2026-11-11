@@ -68,4 +68,56 @@ describe("src/index.tsx", () => {
 		expect(aBytes.length).toBeGreaterThan(10_000);
 		expect(bBytes.length).toBeGreaterThan(10_000);
 	});
+
+	it("GET /it renders the Italian homepage", async () => {
+		const request = new IncomingRequest("http://example.com/it");
+		const ctx = createExecutionContext();
+		const response = await worker.fetch(request, env, ctx);
+		await waitOnExecutionContext(ctx);
+		expect(response.status).toBe(200);
+		const text = await response.text();
+		expect(text).toContain('lang="it"');
+		expect(text).toContain("Come funziona");
+		expect(text).toContain("Prima la privacy");
+		expect(text).toContain("Continua con Splitwise");
+		// toggle back to EN homepage: flag icon (no text label), aria in page
+		// language + title with target language name
+		expect(text).toContain('class="lang-toggle"');
+		expect(text).toContain('href="/"');
+		expect(text).toContain("Passa all"); // aria-label (apostrophe HTML-escaped)
+		expect(text).toContain('title="English"');
+		expect(text).toContain('viewBox="0 0 60 30"'); // Union Jack SVG
+		expect(text).toContain('hreflang="en"');
+		expect(text).toContain('hreflang="it"');
+		expect(text).toContain('hreflang="x-default"');
+		expect(text).toContain('href="http://example.com/it"');
+	});
+
+	it("GET /it redirects authenticated users to the IT dashboard (language-aware logo round-trip)", async () => {
+		const { signSession } = await import("../src/lib/session");
+		const cookie = `sw_session=${await signSession("it-user", env.SESSION_SECRET)}`;
+		const request = new IncomingRequest("http://example.com/it", { headers: { Cookie: cookie } });
+		const ctx = createExecutionContext();
+		const response = await worker.fetch(request, env, ctx);
+		await waitOnExecutionContext(ctx);
+		expect(response.status).toBe(302);
+		expect(response.headers.get("Location")).toBe("/it/dashboard");
+	});
+
+	it("GET /it/support renders the Italian FAQ", async () => {
+		const request = new IncomingRequest("http://example.com/it/support");
+		const ctx = createExecutionContext();
+		const response = await worker.fetch(request, env, ctx);
+		await waitOnExecutionContext(ctx);
+		expect(response.status).toBe(200);
+		const text = await response.text();
+		expect(text).toContain('lang="it"');
+		expect(text).toContain("FAQ");
+		expect(text).toContain("Il mio gruppo è pubblico?");
+		expect(text).toContain("la tua dashboard");
+		expect(text).toContain("Segnala un problema");
+		// hreflang alternates + toggle to EN support
+		expect(text).toContain('href="/support"');
+		expect(text).toContain('hreflang="it"');
+	});
 });
