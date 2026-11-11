@@ -90,7 +90,10 @@ export const PageShell: FC<PageShellProps> = (props) => {
                   SplitViewer
                 </a>
                 <div class="navlinks">
-                  {langToggle ? (
+                  {/* Anonymous pages have no account menu — keep the language
+                      flag in the header there. Logged-in pages host it inside
+                      the user menu (see menu-pop below). */}
+                  {!user && langToggle ? (
                     <a
                       class="lang-toggle"
                       href={langToggle.href}
@@ -117,6 +120,19 @@ export const PageShell: FC<PageShellProps> = (props) => {
                         <span class="caret" aria-hidden="true">▾</span>
                       </summary>
                       <div class="menu-pop">
+                        {langToggle ? (
+                          <a
+                            class="menu-item"
+                            href={langToggle.href}
+                            hreflang={langToggle.lang}
+                            aria-label={t.nav.langSwitchAria}
+                            title={toggleAria}
+                          >
+                            <FlagIcon lang={langToggle.lang} />
+                            <span>{toggleAria}</span>
+                          </a>
+                        ) : null}
+                        <hr class="menu-sep" />
                         <form method="post" action="/auth/logout">
                           <button class="btn" type="submit">Log out</button>
                         </form>

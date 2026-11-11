@@ -92,6 +92,11 @@ const HEADER_FOOTER = `
                         border: 1px solid var(--line); border-radius: var(--radius-btn);
                         box-shadow: var(--shadow); padding: .5rem; }
   .usermenu .menu-pop .btn { width: 100%; box-sizing: border-box; }
+  .menu-item { display: flex; align-items: center; gap: .5rem; padding: .45rem .55rem;
+               border-radius: 8px; color: var(--ink); text-decoration: none;
+               font-size: .95rem; }
+  .menu-item:hover { background: var(--soft); }
+  .menu-sep { border: none; border-top: 1px solid var(--line); margin: .45rem 0; }
   .footer { border-top: 1px solid var(--line); padding: 1.2rem 0 2rem; color: var(--muted); font-size: .88rem; }
   .footer .container { display: flex; flex-wrap: wrap; gap: .8rem 1.4rem; justify-content: space-between;
                        align-items: center; }
