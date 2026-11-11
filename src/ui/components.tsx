@@ -90,7 +90,6 @@ export const PageShell: FC<PageShellProps> = (props) => {
                   SplitViewer
                 </a>
                 <div class="navlinks">
-                  <a href={lang === "it" ? "/it/support" : "/support"}>{t.nav.support}</a>
                   {langToggle ? (
                     <a
                       class="lang-toggle"
