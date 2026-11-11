@@ -3,16 +3,23 @@
 import type { FC } from "hono/jsx";
 import { raw } from "hono/html";
 import { APP_STYLE } from "./styles";
+import { getDict, type Lang } from "../i18n";
 
 /** Single URL constant; flip here if the repo moves. */
 export const REPO_URL = "https://github.com/panz3r/splitviewer";
 export const REPO_ISSUES_URL = `${REPO_URL}/issues`;
 
-interface PageShellProps {
+export interface PageShellProps {
   title: string;
   description?: string;
   /** Extra <head> content (e.g. OG meta), rendered inside the real head. */
   head?: any;
+  /** Page language: sets <html lang> + header/footer copy. Default "en". */
+  lang?: Lang;
+  /** Language toggle rendered in the header (e.g. "Italiano" → /it). */
+  langToggle?: { href: string; label: string };
+  /** hreflang alternates for SEO (absolute URLs). x-default → EN is added automatically. */
+  hreflang?: Array<{ lang: Lang; href: string }>;
   /**
    * Session widget for the header (avatar + first name + Log-out menu, native
    * <details> popup so it works without JS).
@@ -27,17 +34,21 @@ export const PageShell: FC<PageShellProps> = (props) => {
     title,
     description = "Shareable, privacy-first public dashboards for Splitwise groups.",
     head,
+    lang = "en",
+    langToggle,
+    hreflang,
     user,
     children,
     hideNav,
   } = props;
+  const t = getDict(lang);
   const initial = (user?.firstName?.trim().charAt(0) || "?").toUpperCase();
   // <!DOCTYPE html> is NOT added automatically by hono/jsx — without it every
   // page renders in Quirks Mode (layout bugs, console issues).
   return (
     <>
       {raw("<!DOCTYPE html>")}
-      <html lang="en">
+      <html lang={lang}>
       <head>
         <title>{title}</title>
         <meta name="description" content={description} />
@@ -50,6 +61,16 @@ export const PageShell: FC<PageShellProps> = (props) => {
           rel="stylesheet"
           href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&family=Lato:wght@400;700&display=swap"
         />
+        {hreflang?.map((alt) => (
+          <link rel="alternate" hreflang={alt.lang} href={alt.href} />
+        ))}
+        {hreflang && hreflang.length > 0 ? (
+          <link
+            rel="alternate"
+            hreflang="x-default"
+            href={hreflang.find((alt) => alt.lang === "en")?.href ?? hreflang[0].href}
+          />
+        ) : null}
         {head}
         <style>{APP_STYLE}</style>
       </head>
@@ -67,7 +88,12 @@ export const PageShell: FC<PageShellProps> = (props) => {
                   SplitViewer
                 </a>
                 <div class="navlinks">
-                  <a href="/support">Support</a>
+                  <a href={lang === "it" ? "/it/support" : "/support"}>{t.nav.support}</a>
+                  {langToggle ? (
+                    <a class="lang-toggle" href={langToggle.href} hreflang={lang === "it" ? "en" : "it"}>
+                      {langToggle.label}
+                    </a>
+                  ) : null}
                   {user ? (
                     <details class="usermenu">
                       <summary aria-label="Account menu">
@@ -99,13 +125,11 @@ export const PageShell: FC<PageShellProps> = (props) => {
           </main>
           <footer class="footer">
             <div class="container">
-              <span>
-                Not affiliated with Splitwise · Built with their public API
-              </span>
+              <span>{t.footer.notAffiliated}</span>
               <span class="navlinks">
-                <a href="/support">Support</a>
+                <a href={lang === "it" ? "/it/support" : "/support"}>{t.nav.support}</a>
                 <a href={REPO_ISSUES_URL} target="_blank" rel="noopener">
-                  Report an issue
+                  {t.nav.reportIssue}
                 </a>
               </span>
             </div>

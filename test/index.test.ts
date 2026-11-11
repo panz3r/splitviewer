@@ -68,4 +68,41 @@ describe("src/index.tsx", () => {
 		expect(aBytes.length).toBeGreaterThan(10_000);
 		expect(bBytes.length).toBeGreaterThan(10_000);
 	});
+
+	it("GET /it renders the Italian homepage", async () => {
+		const request = new IncomingRequest("http://example.com/it");
+		const ctx = createExecutionContext();
+		const response = await worker.fetch(request, env, ctx);
+		await waitOnExecutionContext(ctx);
+		expect(response.status).toBe(200);
+		const text = await response.text();
+		expect(text).toContain('lang="it"');
+		expect(text).toContain("Come funziona");
+		expect(text).toContain("Prima la privacy");
+		expect(text).toContain("Continua con Splitwise");
+		// toggle back to EN homepage (label "English") + hreflang alternates
+		expect(text).toContain('class="lang-toggle"');
+		expect(text).toContain(">English</a>");
+		expect(text).toContain('hreflang="en"');
+		expect(text).toContain('hreflang="it"');
+		expect(text).toContain('hreflang="x-default"');
+		expect(text).toContain('href="http://example.com/it"');
+	});
+
+	it("GET /it/support renders the Italian FAQ", async () => {
+		const request = new IncomingRequest("http://example.com/it/support");
+		const ctx = createExecutionContext();
+		const response = await worker.fetch(request, env, ctx);
+		await waitOnExecutionContext(ctx);
+		expect(response.status).toBe(200);
+		const text = await response.text();
+		expect(text).toContain('lang="it"');
+		expect(text).toContain("FAQ");
+		expect(text).toContain("Il mio gruppo è pubblico?");
+		expect(text).toContain("la tua dashboard");
+		expect(text).toContain("Segnala un problema");
+		// hreflang alternates + toggle to EN support
+		expect(text).toContain('href="/support"');
+		expect(text).toContain('hreflang="it"');
+	});
 });
