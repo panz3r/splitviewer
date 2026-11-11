@@ -1,6 +1,7 @@
 // Shared UI components (hono/jsx). Every page renders through PageShell so
 // tokens/headers/footers stay consistent across routes.
 import type { FC } from "hono/jsx";
+import { raw } from "hono/html";
 import { APP_STYLE } from "./styles";
 
 /** Single URL constant; flip here if the repo moves. */
@@ -31,8 +32,12 @@ export const PageShell: FC<PageShellProps> = (props) => {
     hideNav,
   } = props;
   const initial = (user?.firstName?.trim().charAt(0) || "?").toUpperCase();
+  // <!DOCTYPE html> is NOT added automatically by hono/jsx — without it every
+  // page renders in Quirks Mode (layout bugs, console issues).
   return (
-    <html lang="en">
+    <>
+      {raw("<!DOCTYPE html>")}
+      <html lang="en">
       <head>
         <title>{title}</title>
         <meta name="description" content={description} />
@@ -108,6 +113,7 @@ export const PageShell: FC<PageShellProps> = (props) => {
         </div>
       </body>
     </html>
+    </>
   );
 };
 
