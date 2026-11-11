@@ -137,8 +137,10 @@ const HERO = `
   .steps .card { margin-top: 0; }
   .step { text-align: center; padding: 1.2rem 1rem; }
   /* Dashboard: group cards grid (M4) */
-  .ggrid { display: grid; gap: 1rem; grid-template-columns: 1fr; }
+  .ggrid { display: grid; gap: 1rem; grid-template-columns: 1fr; align-items: stretch; }
   @media (min-width: 768px) { .ggrid { grid-template-columns: 1fr 1fr; } }
+  /* Sibling .card margin must not offset the second grid column */
+  .ggrid .card { margin-top: 0; height: 100%; }
   .gcard .row { display: flex; justify-content: space-between; align-items: center; gap: .8rem; }
   .gcard .gname { font-weight: 700; }
   /* Public page ledger (M4) */

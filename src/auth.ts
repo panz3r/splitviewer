@@ -134,7 +134,7 @@ export const auth = new Hono<AppEnv>()
     return c.redirect("/dashboard", 302);
   })
 
-  .get("/auth/logout", (c) => {
+  .on(["GET", "POST"], "/auth/logout", (c) => {
     deleteCookie(c, SESSION_COOKIE, { ...cookieFlags(c), maxAge: 0 });
     return c.redirect("/", 302);
   });
