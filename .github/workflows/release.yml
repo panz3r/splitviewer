@@ -5,7 +5,8 @@ on:
     tags: ["v*"]
 
 permissions:
-  contents: read
+  contents: write # GitHub Releases
+  deployments: write # prod deployment records
 
 jobs:
   checks:
@@ -38,6 +39,9 @@ jobs:
   deploy:
     needs: checks
     runs-on: ubuntu-latest
+    # The `prod` environment powers the repo's Environments/Deployments UI and
+    # can carry protection rules (required reviewers, wait timers).
+    environment: prod
     steps:
       - uses: actions/checkout@v4
 
@@ -64,9 +68,60 @@ jobs:
             exit 1
           } || true
 
+      # Open a prod deployment record (shows under the repo's Deployments view,
+      # tied to the tag) and flip its status after the deploy finishes.
+      - name: Create prod deployment record
+        id: deployment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data } = await github.rest.repos.createDeployment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: context.ref,
+              environment: "prod",
+              description: "SplitViewer production deploy",
+              auto_merge: false,
+              required_contexts: [],
+            });
+            core.setOutput("id", String(data.id));
+            core.setOutput("url", "https://splitviewer.mattiapanzeri.workers.dev");
+
       - name: Deploy to Cloudflare Workers
         run: npx wrangler deploy --minify
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           # Optional: only needed if the API token can access multiple accounts
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Publish GitHub Release (generated notes)
+        run: gh release create "$GITHUB_REF_NAME" --generate-notes --title "SplitViewer $GITHUB_REF_NAME"
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      - name: Mark prod deployment successful
+        if: success()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.repos.createDeploymentStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              deployment_id: parseInt("${{ steps.deployment.outputs.id }}", 10),
+              state: "success",
+              environment_url: "${{ steps.deployment.outputs.url }}",
+              description: "Deployed from CI",
+            });
+
+      - name: Mark prod deployment failed
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.repos.createDeploymentStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              deployment_id: parseInt("${{ steps.deployment.outputs.id }}", 10),
+              state: "failure",
+              description: "Deploy failed in CI",
+            });

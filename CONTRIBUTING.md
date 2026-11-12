@@ -107,8 +107,9 @@ repositories/clients via parameters. Presentation never calls services.
   `wrangler.jsonc` from the committed template and generates throwaway keys for
   `.dev.vars` (`bash scripts/setup-local.sh --yes`).
 - **Release** (`.github/workflows/release.yml`): pushing a tag `v*` runs the same
-  checks, then deploys to Cloudflare Workers. Requires these **repository
-  secrets**:
+  checks, then deploys to Cloudflare Workers **and records a `prod` deployment in
+  the repo's Deployments view**, plus publishes a **GitHub Release** with generated
+  notes. Requires these **repository secrets**:
   | Secret | Value |
   |---|---|
   | `CLOUDFLARE_API_TOKEN` | API token with Workers Scripts:Edit (+ D1:Edit); create at dash.cloudflare.com → My Profile → API Tokens |
@@ -119,7 +120,10 @@ repositories/clients via parameters. Presentation never calls services.
   The worker's secrets (`TOKEN_ENCRYPTION_KEY`, `SESSION_SECRET`,
   `SPLITWISE_CLIENT_SECRET`) are **not** touched by deploys — set them once with
   `wrangler secret put` (see README).
-- To cut a release: `git tag vX.Y.Z && git push origin vX.Y.Z`. `npm run deploy`
+- To cut a release: `git tag vX.Y.Z && git push origin vX.Y.Z` — CI checks, deploys
+  to prod, records the deployment, and publishes the GitHub Release. Optional:
+  protect the `prod` environment (Settings → Environments → required reviewers)
+  for a manual approval gate. `npm run deploy`
   stays available for manual deploys from a configured checkout.
 
 ## Reporting bugs / security
