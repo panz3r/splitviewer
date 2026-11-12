@@ -349,5 +349,6 @@ wrangler.jsonc
 # Wrangler local artifacts
 .wrangler/
 
-# Local Chromium installation
+# Local Chromium installation (scripts/install-chromium.sh)
 chromium/
+.chromium-profile/
