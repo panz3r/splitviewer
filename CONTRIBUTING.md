@@ -22,7 +22,8 @@ npx wrangler deploy   # ship it
 `npm run setup-local` wraps the manual steps (equivalent to):
 
 ```bash
-cp .dev.vars.example .dev.vars   # then fill in the values
+cp .dev.vars.example .dev.vars            # then fill in the values
+cp wrangler.example.jsonc wrangler.jsonc  # only if missing (gitignored, deployment-specific)
 npx wrangler d1 migrations apply DB --local
 ```
 
@@ -62,9 +63,11 @@ repositories/clients via parameters. Presentation never calls services.
 - **All Cloudflare resources must be created with `jurisdiction: eu`** — this is a
   project compliance requirement. Concretely: `wrangler d1 create splitviewer --jurisdiction eu`
   (if a resource type's `--jurisdiction` flag doesn't exist, flag it before creating).
-- **Secrets never live in code or wrangler.jsonc.** Dev secrets go to `.dev.vars`
-  (gitignored), production uses `wrangler secret put`. Outbound failure logs stay
-  terse — never log tokens, cookies, or OAuth payloads.
+- **Secrets and deployment details never live in the repo.** Dev secrets go to
+  `.dev.vars` (gitignored; `.dev.vars.example` is the committed template), production
+  uses `wrangler secret put`. `wrangler.jsonc` is gitignored too — it carries your
+  `database_id` + PROD client id; `wrangler.example.jsonc` is the template. Outbound
+  failure logs stay terse — never log tokens, cookies, or OAuth payloads.
 - **Behavior contracts live in `plans/refactor-mvc.md`** (privacy wall, multi-currency,
   instant revocation, stale-while-revalidate, cookie `Secure` on http://localhost,
   Hono registration order, EU jurisdiction). Changing one of those requires a test

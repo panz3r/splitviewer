@@ -39,6 +39,7 @@ hard compliance requirement of this project.
 ```bash
 npm install
 npx wrangler login
+cp wrangler.example.jsonc wrangler.jsonc    # gitignored; edit the two placeholders:
 npx wrangler d1 create splitviewer --jurisdiction eu    # paste database_id into wrangler.jsonc
 npx wrangler d1 migrations apply DB --remote
 npx wrangler secret put TOKEN_ENCRYPTION_KEY            # openssl rand -hex 32
@@ -52,8 +53,10 @@ npx wrangler secret put SPLITWISE_CLIENT_SECRET
 npx wrangler deploy
 ```
 
-`wrangler.example.jsonc` shows the full config with placeholders. Secrets never live in
-code or config files — details and troubleshooting in [CONTRIBUTING.md](CONTRIBUTING.md).
+`wrangler.jsonc` is **gitignored** (deployment-specific: your `database_id` and PROD
+Splitwise client id never land in the repo). `wrangler.example.jsonc` is the committed
+template — `npm run setup-local` seeds it automatically on fresh clones. Secrets never
+live in code or config files — details and troubleshooting in [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Privacy model
 

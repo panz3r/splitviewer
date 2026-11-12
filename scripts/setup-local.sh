@@ -50,11 +50,24 @@ SPLITWISE_CLIENT_SECRET="$SPLITWISE_CLIENT_SECRET"
 EOF
 echo "==> wrote .dev.vars (gitignored)"
 
-# 2. Local D1 + schema --------------------------------------------------------
+# 2. Wrangler config (deployment-specific, gitignored) ------------------------
+if [ ! -f wrangler.jsonc ]; then
+  cp wrangler.example.jsonc wrangler.jsonc
+  echo "==> seeded wrangler.jsonc from wrangler.example.jsonc"
+  cat <<'EOF'
+    NOTE: fill in wrangler.jsonc before deploying:
+      - database_id:  stamp the id printed by
+            npx wrangler d1 create splitviewer --jurisdiction eu
+      - SPLITWISE_CLIENT_ID: your PROD Splitwise app's client id
+    (Tests and local dev work without these; only `wrangler deploy` needs them.)
+EOF
+fi
+
+# 3. Local D1 + schema --------------------------------------------------------
 npx wrangler d1 migrations apply DB --local
 echo "==> local D1 schema applied"
 
-# 3. Next steps ---------------------------------------------------------------
+# 4. Next steps ---------------------------------------------------------------
 cat <<'EOF'
 
 Local setup complete. Next steps:
@@ -73,6 +86,7 @@ Local setup complete. Next steps:
 Production deployment (README.md has the full walkthrough):
 
   npx wrangler login
+  # fill wrangler.jsonc: create the D1 and stamp its id, plus your PROD client id
   npx wrangler d1 create splitviewer --jurisdiction eu   # EU-only, required
   npx wrangler d1 migrations apply DB --remote
   npx wrangler secret put TOKEN_ENCRYPTION_KEY           # openssl rand -hex 32

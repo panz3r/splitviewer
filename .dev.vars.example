@@ -1,0 +1,9 @@
+# Local dev secrets — copy to .dev.vars and fill in (never commit .dev.vars!).
+# Generate 32-byte keys with:  openssl rand -hex 32
+TOKEN_ENCRYPTION_KEY="REPLACE_ME_openssl_rand_hex_32"
+SESSION_SECRET="REPLACE_ME_openssl_rand_hex_32"
+
+# Dev Splitwise OAuth app credentials (register at https://secure.splitwise.com/apps
+# with the single callback URL http://localhost:8787/auth/callback).
+SPLITWISE_CLIENT_ID="REPLACE_ME_SPLITWISE_CLIENT_ID"
+SPLITWISE_CLIENT_SECRET="REPLACE_ME_SPLITWISE_CLIENT_SECRET"

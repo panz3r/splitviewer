@@ -340,6 +340,11 @@ plans/
 # Cloudflare local dev secrets
 .dev.vars
 .dev.vars.*
+!.dev.vars.example
+
+# Deployment-specific wrangler config (template: wrangler.example.jsonc).
+# Untracked so personal database_id / Splitwise client ids never land in the repo.
+wrangler.jsonc
 
 # Wrangler local artifacts
 .wrangler/
