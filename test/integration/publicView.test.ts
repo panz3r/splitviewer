@@ -1,9 +1,9 @@
 import { env } from "cloudflare:workers";
 import { createExecutionContext, waitOnExecutionContext } from "cloudflare:test";
-import worker from "../src/index";
+import worker from "../../src/index";
 import { describe, expect, it } from "vitest";
-import { deleteCache, FRESH_WINDOW_SECONDS, getCache, isFresh, setCache } from "../src/lib/cache";
-import { sanitizeGroup, type RawGroupInput } from "../src/lib/sanitize";
+import { deleteCache, FRESH_WINDOW_SECONDS, getCache, isFresh, setCache } from "../../src/lib/cache";
+import { sanitizeGroup, type RawGroupInput } from "../../src/domain/sanitizeService";
 
 // Note on the revalidate paths: the route's outbound Splitwise call cannot be
 // mocked inside workerd, but these tests use a dummy encrypted token, so live
@@ -28,7 +28,7 @@ async function insertUser(splitwiseId: string): Promise<string> {
 async function encryptForTest(plaintext: string): Promise<string> {
   const key = env.TOKEN_ENCRYPTION_KEY;
   // Reuse the worker's own crypto module through the app import graph.
-  const { encrypt } = await import("../src/lib/crypto");
+  const { encrypt } = await import("../../src/lib/crypto");
   return encrypt(plaintext, key);
 }
 

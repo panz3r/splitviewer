@@ -1,9 +1,9 @@
 import { env } from "cloudflare:workers";
-import worker from "../src/index";
+import worker from "../../src/index";
 import { describe, expect, it } from "vitest";
-import { signSession } from "../src/lib/session";
-import { encrypt } from "../src/lib/crypto";
-import type { UserRow } from "../src/types";
+import { signSession } from "../../src/domain/sessionService";
+import { encrypt } from "../../src/lib/crypto";
+import type { UserRow } from "../../src/types";
 
 // Dashboard + shares API tests. These paths never call Splitwise outbound
 // (share endpoints are D1-only; the dashboard is only tested unauthenticated

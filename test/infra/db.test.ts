@@ -1,6 +1,6 @@
 import { env } from "cloudflare:workers";
-import { encrypt } from "../src/lib/crypto";
-import { upsertUser } from "../src/lib/users";
+import { encrypt } from "../../src/lib/crypto";
+import { upsertUser } from "../../src/lib/users";
 import { describe, expect, it } from "vitest";
 
 // D1 schema smoke test: the migration was applied by test/apply-migrations.ts.

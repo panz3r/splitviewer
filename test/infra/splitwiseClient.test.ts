@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildAuthorizeUrl, exchangeCodeForToken, fetchCurrentUser, SplitwiseAuthError } from "../src/lib/splitwise";
+import { buildAuthorizeUrl, exchangeCodeForToken, fetchCurrentUser, SplitwiseAuthError } from "../../src/lib/splitwise";
 
 const jsonResponse = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });

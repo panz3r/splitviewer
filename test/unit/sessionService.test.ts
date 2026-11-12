@@ -9,7 +9,7 @@ import {
   signState,
   verifySession,
   verifyState,
-} from "../src/lib/session";
+} from "../../src/domain/sessionService";
 
 const KEY = "test-secret";
 

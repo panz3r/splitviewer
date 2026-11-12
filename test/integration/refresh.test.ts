@@ -1,7 +1,7 @@
 import { env } from "cloudflare:workers";
 import { describe, expect, it } from "vitest";
-import { encrypt, decrypt } from "../src/lib/crypto";
-import { refreshUserToken, upsertUser } from "../src/lib/users";
+import { encrypt, decrypt } from "../../src/lib/crypto";
+import { refreshUserToken, upsertUser } from "../../src/lib/users";
 
 // Token refresh flow. Splitwise's REAL observed token responses carry no
 // refresh_token, so the common path is refreshUserToken → false with zero

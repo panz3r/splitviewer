@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { memberLabel, sanitizeGroup, type RawGroupInput } from "../src/lib/sanitize";
+import { memberLabel, sanitizeGroup, type RawGroupInput } from "../../src/domain/sanitizeService";
 
 const RAW: RawGroupInput = {
   id: "999",

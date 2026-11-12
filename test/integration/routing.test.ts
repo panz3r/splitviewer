@@ -1,7 +1,7 @@
 import { env } from "cloudflare:workers";
 import { createExecutionContext, waitOnExecutionContext } from "cloudflare:test";
 import { describe, expect, it } from "vitest";
-import worker from "../src/index";
+import worker from "../../src/index";
 
 // Landing page smoke test. Anonymous users get the marketing page;
 // authenticated users get redirected to the dashboard (session cookie).
@@ -94,7 +94,7 @@ describe("src/index.tsx", () => {
 	});
 
 	it("GET /it redirects authenticated users to the IT dashboard (language-aware logo round-trip)", async () => {
-		const { signSession } = await import("../src/lib/session");
+		const { signSession } = await import("../../src/domain/sessionService");
 		const cookie = `sw_session=${await signSession("it-user", env.SESSION_SECRET)}`;
 		const request = new IncomingRequest("http://example.com/it", { headers: { Cookie: cookie } });
 		const ctx = createExecutionContext();

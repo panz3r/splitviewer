@@ -1,7 +1,7 @@
 import { env, createExecutionContext, waitOnExecutionContext } from "cloudflare:test";
 import { describe, expect, it } from "vitest";
-import worker from "../src/index";
-import { signSession, verifyState, signState } from "../src/lib/session";
+import worker from "../../src/index";
+import { signSession, verifyState, signState } from "../../src/domain/sessionService";
 
 // Route-level tests against the real app. Env comes from the workers test
 // integration (wrangler.jsonc vars + .dev.vars; values may be placeholders —

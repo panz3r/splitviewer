@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { decrypt, encrypt } from "../src/lib/crypto";
+import { decrypt, encrypt } from "../../src/lib/crypto";
 
 // 32 bytes as hex — matches the format of the TOKEN_ENCRYPTION_KEY secret.
 const KEY = "11".repeat(32);
