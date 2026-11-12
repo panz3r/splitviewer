@@ -47,10 +47,12 @@ last sanitized snapshot until then.
 
 ## Report a problem or request a takedown
 
-- Bugs & questions: <https://github.com/panz3r/splitviewer/issues>
-- Data concerns (a link that shouldn't be public): please open an issue with
-  the share slug; we treat leak reports as urgent. Share owners can always
+- Report form (guided template): <https://github.com/panz3r/splitviewer/issues/new?template=report.yml>
+  — covers bugs, privacy concerns, and takedown requests in one form.
+- Takedown context (a link that shouldn't be public): include the share link
+  (`…/p/<slug>`); we treat leak reports as urgent. Share owners can always
   revoke instantly themselves from the dashboard.
+- General issue list: <https://github.com/panz3r/splitviewer/issues>
 
 ## Contributing
 

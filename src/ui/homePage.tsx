@@ -2,7 +2,7 @@
 // pitch. EN/IT share one component so structure can't drift. All data arrives
 // via props; no I/O, no business logic.
 import { getDict, type Lang } from "../i18n";
-import { REPO_ISSUES_URL, type PageShellProps } from "./components";
+import { REPO_REPORT_URL, type PageShellProps } from "./components";
 
 export function homePage(props: { lang: Lang; origin: string }): PageShellProps {
   const { lang, origin } = props;
@@ -105,7 +105,7 @@ export function homePage(props: { lang: Lang; origin: string }): PageShellProps 
           <p class="muted small" style="margin-top: .8rem;">
             {t.home.privacyMore}{" "}
             <a href={lang === "it" ? "/it/support" : "/support"}>{t.nav.support}</a> ·{" "}
-            <a href={REPO_ISSUES_URL} target="_blank" rel="noopener">
+            <a href={REPO_REPORT_URL} target="_blank" rel="noopener">
               {t.nav.reportIssue}
             </a>
           </p>

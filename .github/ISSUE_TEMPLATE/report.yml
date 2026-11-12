@@ -1,0 +1,60 @@
+name: Report a problem / request a takedown
+description: Bug reports, privacy concerns, and takedown requests for public dashboards
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping keep SplitViewer safe. Useful context:
+
+        - **Takedown**: public pages only ever show first names + last initials
+          ("Marco P."), never emails, avatars, or full surnames. Share owners can
+          revoke their own links instantly from the dashboard.
+        - **Data storage**: Cloudflare D1 restricted to EU jurisdiction; OAuth
+          tokens are AES-256-GCM encrypted at rest.
+        - More details: the [in-app support page](https://splitviewer.mattiapanzeri.workers.dev/support).
+
+        SplitViewer is not affiliated with Splitwise.
+
+  - type: dropdown
+    id: kind
+    attributes:
+      label: What is this report about?
+      options:
+        - Bug (something broken)
+        - Takedown request (a share link that should not be public)
+        - Privacy concern
+        - Question
+        - Other
+    validations:
+      required: true
+
+  - type: input
+    id: share_link
+    attributes:
+      label: Share link involved (if any)
+      description: The full public URL (…/p/<slug>). Leave empty for general bugs or questions.
+      placeholder: https://splitviewer.mattiapanzeri.workers.dev/p/XXXXXXXXXXXXXXXX
+
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened?
+      description: What you saw, what you expected, and steps to reproduce for bugs. Please do NOT paste private expense data — links and masked names are enough.
+    validations:
+      required: true
+
+  - type: input
+    id: where
+    attributes:
+      label: Where did you see it?
+      description: The hosted instance or your self-hosted worker URL.
+
+  - type: checkboxes
+    id: confirmation
+    attributes:
+      label: Confirmation
+      options:
+        - label: I understand SplitViewer is an independent open-source tool, not affiliated with Splitwise.
+          required: true
+        - label: I have not included private data (emails, receipts, full surnames) in this report.
+          required: true

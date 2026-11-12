@@ -1,7 +1,7 @@
 // Support view (presentation only): FAQ, privacy explainer, abuse/takedown
 // path. EN/IT share one component so structure can't drift.
 import { getDict, type Lang } from "../i18n";
-import { REPO_ISSUES_URL, REPO_URL, type PageShellProps } from "./components";
+import { REPO_REPORT_URL, REPO_URL, type PageShellProps } from "./components";
 
 export function supportPage(props: { lang: Lang; origin: string }): PageShellProps {
   const { lang, origin } = props;
@@ -65,8 +65,8 @@ export function supportPage(props: { lang: Lang; origin: string }): PageShellPro
           <h2 style="margin-top: 0;">{t.support.reportTitle}</h2>
           <p>
             {t.support.reportBody}{" "}
-            <a href={REPO_ISSUES_URL} target="_blank" rel="noopener">
-              {REPO_ISSUES_URL}
+            <a href={REPO_REPORT_URL} target="_blank" rel="noopener">
+              {t.nav.reportIssue}
             </a>
             .
           </p>

@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Questions & FAQ
+    url: https://splitviewer.mattiapanzeri.workers.dev/support
+    about: How SplitViewer works, what is shown publicly, self-hosting, and the FAQ
+  - name: Contributing
+    url: https://github.com/panz3r/splitviewer/blob/main/CONTRIBUTING.md
+    about: Development setup, code layout, and test conventions
