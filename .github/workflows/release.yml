@@ -22,6 +22,9 @@ jobs:
         run: npm ci
 
       - name: Seed local config + keys
+        env:
+          SPLITWISE_CLIENT_ID: ci-dummy-client-id
+          SPLITWISE_CLIENT_SECRET: ci-dummy-client-secret
         run: bash scripts/setup-local.sh --yes
 
       - name: Typecheck (app + tests)

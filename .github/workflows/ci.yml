@@ -28,8 +28,13 @@ jobs:
         run: npm ci
 
       # No real credentials needed: seeds wrangler.jsonc (gitignored in the repo)
-      # from the committed template and generates throwaway keys for .dev.vars.
+      # from the committed template and generates throwaway keys + dummy OAuth
+      # credentials for .dev.vars (dummies keep /auth/login functional — the
+      # route only refuses the literal REPLACE_ME placeholders).
       - name: Seed local config + keys
+        env:
+          SPLITWISE_CLIENT_ID: ci-dummy-client-id
+          SPLITWISE_CLIENT_SECRET: ci-dummy-client-secret
         run: bash scripts/setup-local.sh --yes
 
       - name: Typecheck (app)
