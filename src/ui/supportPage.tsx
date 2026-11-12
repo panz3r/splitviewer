@@ -1,14 +1,11 @@
-// Support page (EN at /support, IT at /it/support): FAQ, privacy explainer,
-// abuse/takedown path. EN/IT share one render function so structure can't drift.
-import { Hono } from "hono";
-import { getDict, type Lang } from "./i18n";
-import { PageShell, REPO_ISSUES_URL, REPO_URL, type PageShellProps } from "./ui/components";
-import type { AppEnv } from "./types";
+// Support view (presentation only): FAQ, privacy explainer, abuse/takedown
+// path. EN/IT share one component so structure can't drift.
+import { getDict, type Lang } from "../i18n";
+import { REPO_ISSUES_URL, REPO_URL, type PageShellProps } from "./components";
 
-function supportPage(c: { req: { url: string } }, lang: Lang): PageShellProps {
+export function supportPage(props: { lang: Lang; origin: string }): PageShellProps {
+  const { lang, origin } = props;
   const t = getDict(lang);
-  const origin = new URL(c.req.url).origin;
-  const supportPath = lang === "it" ? "/it/support" : "/support";
 
   return {
     title: t.meta.supportTitle,
@@ -89,8 +86,3 @@ function supportPage(c: { req: { url: string } }, lang: Lang): PageShellProps {
     ),
   };
 }
-
-export const supportRoutes = new Hono<AppEnv>()
-
-  .get("/support", (c) => c.html(<PageShell {...supportPage(c, "en")} />))
-  .get("/it/support", (c) => c.html(<PageShell {...supportPage(c, "it")} />));

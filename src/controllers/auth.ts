@@ -9,22 +9,22 @@
 import { Hono } from "hono";
 import type { Context } from "hono";
 import { deleteCookie, getCookie, setCookie } from "hono/cookie";
-import { decrypt, encrypt } from "./lib/crypto";
+import { decrypt, encrypt } from "../lib/crypto";
 import {
   SESSION_COOKIE,
   STATE_COOKIE,
   signSession,
   signState,
   verifyState,
-} from "./lib/session";
+} from "../domain/sessionService";
 import {
   buildAuthorizeUrl,
   exchangeCodeForToken,
   fetchCurrentUser,
   SplitwiseAuthError,
-} from "./lib/splitwise";
-import { upsertUser } from "./lib/users";
-import type { AppEnv } from "./types";
+} from "../lib/splitwise";
+import { upsertUser } from "../lib/users";
+import type { AppEnv } from "../types";
 
 const PLACEHOLDER_CLIENT_ID = "REPLACE_ME_SPLITWISE_CLIENT_ID";
 

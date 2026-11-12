@@ -3,10 +3,10 @@
 // (dashboard buttons) get redirects; JSON callers get JSON bodies.
 import { Hono } from "hono";
 import type { Context } from "hono";
-import { requireSession } from "./middleware";
-import { shareServiceForEnv, SLUG_LENGTH } from "./wiring";
-import type { Lang } from "./i18n";
-import type { AppEnv } from "./types";
+import { requireSession } from "../middleware/session";
+import { shareServiceForEnv, SLUG_LENGTH } from "../wiring";
+import type { Lang } from "../i18n";
+import type { AppEnv } from "../types";
 
 export { SLUG_LENGTH };
 

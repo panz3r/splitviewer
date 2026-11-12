@@ -1,15 +1,8 @@
-// Public dashboard controller: GET /p/:slug — the ONLY unauthenticated content
-// surface. The SWR decision tree lives in domain/publicViewService; this file
-// is HTTP wiring (gating, headers, view rendering).
-// Security posture: everything rendered comes from the sanitized snapshot;
-// revocation beats the cache; missing and revoked slugs render identically.
-import { Hono } from "hono";
-import { deleteCache } from "./lib/cache";
-import { resolvePublicViewForEnv } from "./wiring";
-import { D1SharesRepo } from "./repositories/sharesRepo";
-import { PageShell } from "./ui/components";
-import type { SanitizedSnapshot } from "./lib/sanitize";
-import type { AppEnv } from "./types";
+// Public dashboard view (presentation only): ledger of sanitized debts per
+// currency, plus the 404/unavailable variants. All content comes from the
+// sanitized snapshot (privacy wall is upstream in domain/sanitizeService).
+import { PageShell } from "./components";
+import type { SanitizedSnapshot } from "../lib/sanitize";
 
 const STYLE = `
   .cur { margin-top: 1.2rem; border: 1px solid var(--line); border-radius: var(--radius-card); padding: .2rem 1.1rem .8rem; background: var(--paper); box-shadow: var(--shadow); }
@@ -22,7 +15,7 @@ const STYLE = `
   .foot { color: var(--muted); font-size: .85rem; margin-top: 1.5rem; }
 `;
 
-function NotFoundPage({ origin }: { origin: string }) {
+export function PublicNotFoundPage({ origin }: { origin: string }) {
   return (
     <PageShell title="Not found — SplitViewer" hideNav>
       <div class="card">
@@ -34,7 +27,7 @@ function NotFoundPage({ origin }: { origin: string }) {
   );
 }
 
-function UnavailablePage() {
+export function PublicUnavailablePage() {
   return (
     <PageShell title="Snapshot unavailable — SplitViewer" hideNav>
       <div class="card">
@@ -45,7 +38,7 @@ function UnavailablePage() {
   );
 }
 
-function PublicDashboard({ snapshot, asOfSeconds, slug, origin }: { snapshot: SanitizedSnapshot; asOfSeconds: number | null; slug: string; origin: string }) {
+export function PublicDashboard({ snapshot, asOfSeconds, slug, origin }: { snapshot: SanitizedSnapshot; asOfSeconds: number | null; slug: string; origin: string }) {
   const ogDescription =
     snapshot.currencies.length === 0
       ? "No open debts — everyone is settled up."
@@ -118,32 +111,3 @@ function PublicDashboard({ snapshot, asOfSeconds, slug, origin }: { snapshot: Sa
     </PageShell>
   );
 }
-
-export const publicView = new Hono<AppEnv>()
-
-  .get("/p/:slug", async (c) => {
-    const slug = c.req.param("slug");
-    const origin = new URL(c.req.url).origin;
-
-    // Unknown vs revoked must be indistinguishable, and revocation also kills
-    // the cache so a revoked share can never "flash" its snapshot again.
-    const active = await new D1SharesRepo(c.env).isActive(slug);
-    if (!active) {
-      await deleteCache(c.env, slug);
-      return c.html(<NotFoundPage origin={origin} />, 404);
-    }
-
-    const view = await resolvePublicViewForEnv(c.env, slug);
-    c.header("X-Cache", view.xCache);
-    const html =
-      view.status === 404 ? (
-        <NotFoundPage origin={origin} />
-      ) : view.status === 502 || !view.snapshot ? (
-        <UnavailablePage />
-      ) : (
-        <PublicDashboard snapshot={view.snapshot} asOfSeconds={view.asOfSeconds} slug={slug} origin={origin} />
-      );
-    // No-store for 404/502; short browser cache for 200 (crawlers re-fetch, fine).
-    c.header("Cache-Control", view.status === 200 ? "max-age=30" : "no-store");
-    return c.html(html, view.status);
-  });

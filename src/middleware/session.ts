@@ -1,23 +1,11 @@
-// Session cookie reading (middleware layer) on top of domain/sessionService.
+// Session middleware (MVC refactor phase 02.11): cookie reading + user
+// resolution on top of domain/sessionService and the users repository.
 // Unauthenticated API requests get 401 JSON; page routes get a 302 to /auth/login.
 import type { Context, Next } from "hono";
 import { getCookie } from "hono/cookie";
-import { verifySession, SESSION_COOKIE } from "./domain/sessionService";
-import { D1UsersRepo } from "./repositories/usersRepo";
-import type { AppEnv, UserRow } from "./types";
-
-// Compatibility re-exports during the MVC transition — new code imports the
-// sign/verify primitives from domain/sessionService.
-export {
-  STATE_COOKIE,
-  SESSION_COOKIE,
-  STATE_TTL_SECONDS,
-  SESSION_TTL_SECONDS,
-  signState,
-  verifyState,
-  signSession,
-  verifySession,
-} from "./domain/sessionService";
+import { verifySession, SESSION_COOKIE } from "../domain/sessionService";
+import { D1UsersRepo } from "../repositories/usersRepo";
+import type { AppEnv, UserRow } from "../types";
 
 /** Returns the signed-in user's id, or null. Reads the `sw_session` cookie. */
 export async function getSessionUserId(c: Context): Promise<string | null> {

@@ -1,4 +1,6 @@
 // CloudflareBindings is ambient from worker-configuration.d.ts (wrangler types).
+import type { Lang } from "./i18n";
+
 export interface UserRow {
   id: string;
   splitwise_user_id: string;
@@ -10,5 +12,5 @@ export interface UserRow {
 
 export type AppEnv = {
   Bindings: CloudflareBindings;
-  Variables: { user: UserRow };
+  Variables: { user: UserRow; lang: Lang };
 };

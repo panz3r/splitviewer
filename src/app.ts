@@ -1,21 +1,27 @@
-// App composition root (MVC refactor phase 02.1). Builds the Hono app with the
-// exact registration order the worker previously used in index.tsx:
+// App composition root (MVC refactor phase 02.11). Builds the Hono app:
 // public-route hardening (rate limits) BEFORE the route handlers — Hono
 // composes in registration order, so later uses would be dead code.
+// All routers live in controllers/; language is derived in middleware/i18n.
 import { Hono } from "hono";
-import { auth } from "./auth";
-import { homeRoutes } from "./home";
-import { shares } from "./shares";
-import { dashboard } from "./dashboard";
-import { publicView } from "./public";
-import { ogImage } from "./og";
+import {
+  auth,
+  homeRoutes,
+  dashboard,
+  shares,
+  publicView,
+  ogImage,
+  exampleCard,
+  supportRoutes,
+} from "./controllers";
 import { ipRateLimit } from "./lib/ratelimit";
-import { supportRoutes } from "./support";
-import { exampleCard } from "./example-card";
+import { langMiddleware } from "./middleware/i18n";
 import type { AppEnv } from "./types";
 
 export function createApp(): Hono<AppEnv> {
   const app = new Hono<AppEnv>();
+
+  // Language derivation must run before any handler that reads c.get("lang").
+  app.use("*", langMiddleware);
 
   // Public-route hardening must be registered BEFORE the route handlers
   // (Hono composes in registration order; later uses are dead code).

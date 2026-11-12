@@ -4,9 +4,9 @@
 /** @jsxImportSource react */
 import { Hono } from "hono";
 import { ImageResponse, cache } from "@cf-wasm/og/workerd";
-import { OgCard } from "./ui/og-card";
-import type { AppEnv } from "./types";
-import type { SanitizedSnapshot } from "./lib/sanitize";
+import { OgCard } from "../ui/og-card";
+import type { AppEnv } from "../types";
+import type { SanitizedSnapshot } from "../lib/sanitize";
 
 const FIRST_NAMES = ["Marco", "Chiara", "Giulia", "Luca", "Sofia", "Davide", "Elena", "Pietro", "Marta", "Tommaso"];
 const LAST_INITIALS = ["B.", "M.", "R.", "T.", "V.", "D.", "F.", "G."];

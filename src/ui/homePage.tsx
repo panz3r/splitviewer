@@ -1,15 +1,12 @@
-// Homepage (EN at /, IT at /it): value prop + how-it-works + privacy pitch,
-// with a live fake-data example card (randomized per request via
-// /example-card.png). EN/IT share one render function so structure can't drift.
-import { Hono } from 'hono'
-import { getDict, type Lang } from './i18n'
-import { getSessionUserId } from './middleware'
-import { PageShell, REPO_ISSUES_URL, type PageShellProps } from './ui/components'
-import type { AppEnv } from './types'
+// Homepage view (presentation only): value prop + how-it-works + privacy
+// pitch. EN/IT share one component so structure can't drift. All data arrives
+// via props; no I/O, no business logic.
+import { getDict, type Lang } from "../i18n";
+import { REPO_ISSUES_URL, type PageShellProps } from "./components";
 
-function homePage(c: { req: { url: string } }, lang: Lang): PageShellProps {
+export function homePage(props: { lang: Lang; origin: string }): PageShellProps {
+  const { lang, origin } = props;
   const t = getDict(lang);
-  const origin = new URL(c.req.url).origin;
   const basePath = lang === "it" ? "/it" : "";
 
   return {
@@ -117,24 +114,3 @@ function homePage(c: { req: { url: string } }, lang: Lang): PageShellProps {
     ),
   };
 }
-
-export const homeRoutes = new Hono<AppEnv>()
-
-  .get("/", async (c) => {
-    const userId = await getSessionUserId(c)
-    if (userId) {
-      // Authenticated users should never see the landing page again.
-      return c.redirect('/dashboard', 302)
-    }
-    return c.html(<PageShell {...homePage(c, "en")} />)
-  })
-
-  .get("/it", async (c) => {
-    const userId = await getSessionUserId(c)
-    if (userId) {
-      // Language-aware: from the IT homepage, logged-in users land on the IT
-      // dashboard (logo click from /it/dashboard must round-trip).
-      return c.redirect('/it/dashboard', 302)
-    }
-    return c.html(<PageShell {...homePage(c, "it")} />)
-  })

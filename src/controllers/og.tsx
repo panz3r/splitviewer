@@ -6,10 +6,10 @@
 /** @jsxImportSource react */
 import { Hono } from "hono";
 import { ImageResponse, cache } from "@cf-wasm/og/workerd";
-import { OgCard } from "./ui/og-card";
-import { resolvePublicViewForEnv } from "./wiring";
-import { D1SharesRepo } from "./repositories/sharesRepo";
-import type { AppEnv } from "./types";
+import { OgCard } from "../ui/og-card";
+import { resolvePublicViewForEnv } from "../wiring";
+import { D1SharesRepo } from "../repositories/sharesRepo";
+import type { AppEnv } from "../types";
 
 export const ogImage = new Hono<AppEnv>()
 
