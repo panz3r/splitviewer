@@ -3,7 +3,7 @@
 // /example-card.png). EN/IT share one render function so structure can't drift.
 import { Hono } from 'hono'
 import { getDict, type Lang } from './i18n'
-import { getSessionUserId } from './lib/session'
+import { getSessionUserId } from './middleware'
 import { PageShell, REPO_ISSUES_URL, type PageShellProps } from './ui/components'
 import type { AppEnv } from './types'
 

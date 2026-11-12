@@ -1,19 +1,40 @@
-// Shared auth middleware + helper for Phase 3+ routes.
+// Session cookie reading (middleware layer) on top of domain/sessionService.
 // Unauthenticated API requests get 401 JSON; page routes get a 302 to /auth/login.
 import type { Context, Next } from "hono";
+import { getCookie } from "hono/cookie";
+import { verifySession, SESSION_COOKIE } from "./domain/sessionService";
+import { D1UsersRepo } from "./repositories/usersRepo";
 import { decrypt } from "./lib/crypto";
-import { getSessionUserId } from "./lib/session";
 import type { AppEnv, UserRow } from "./types";
+
+// Compatibility re-exports during the MVC transition — new code imports the
+// sign/verify primitives from domain/sessionService.
+export {
+  STATE_COOKIE,
+  SESSION_COOKIE,
+  STATE_TTL_SECONDS,
+  SESSION_TTL_SECONDS,
+  signState,
+  verifyState,
+  signSession,
+  verifySession,
+} from "./domain/sessionService";
+
+/** Returns the signed-in user's id, or null. Reads the `sw_session` cookie. */
+export async function getSessionUserId(c: Context): Promise<string | null> {
+  const secret = c.env.SESSION_SECRET;
+  if (typeof secret !== "string" || secret.length === 0) return null;
+  const token = getCookie(c, SESSION_COOKIE);
+  if (!token) return null;
+  const payload = await verifySession(token, secret);
+  return payload?.userId ?? null;
+}
 
 export async function requireSession(c: Context<AppEnv>, next: Next) {
   const userId = await getSessionUserId(c);
   let row: UserRow | null = null;
   if (userId) {
-    row = await c.env.DB.prepare(
-      "SELECT id, splitwise_user_id, encrypted_access_token, token_expiry, avatar_url, first_name FROM users WHERE id = ?1",
-    )
-      .bind(userId)
-      .first<UserRow>();
+    row = await new D1UsersRepo(c.env).byId(userId);
   }
   if (!row) {
     if (c.req.path.startsWith("/api/")) {
