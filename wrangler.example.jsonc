@@ -1,0 +1,29 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "splitviewer",
+  "main": "src/index.tsx",
+  "compatibility_date": "2026-11-09",
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
+  "vars": {
+    // Your PROD Splitwise OAuth app's client id (its callback URL must be
+    // https://<your-worker-domain>/auth/callback).
+    "SPLITWISE_CLIENT_ID": "REPLACE_ME_SPLITWISE_CLIENT_ID"
+  },
+  "rules": [
+    {
+      "type": "CompiledWasm",
+      "globs": ["**/*.wasm"],
+      "fallthrough": true
+    }
+  ],
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "splitviewer",
+      // Stamp the real id from:  wrangler d1 create splitviewer --jurisdiction eu
+      "database_id": "REPLACE_ME_DATABASE_ID"
+    }
+  ]
+}
