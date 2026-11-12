@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch: # manual run (also used to verify pipeline changes)
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # No real credentials needed: seeds wrangler.jsonc (gitignored in the repo)
+      # from the committed template and generates throwaway keys for .dev.vars.
+      - name: Seed local config + keys
+        run: bash scripts/setup-local.sh --yes
+
+      - name: Typecheck (app)
+        run: npx tsc --noEmit -p tsconfig.json
+
+      - name: Typecheck (tests)
+        run: npx tsc --noEmit -p test/tsconfig.json
+
+      - name: Tests (vitest + Cloudflare Workers pool)
+        run: npm test

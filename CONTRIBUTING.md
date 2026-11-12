@@ -97,8 +97,30 @@ repositories/clients via parameters. Presentation never calls services.
 
 1. Fork / branch (`feat/...` or `fix/...`).
 2. Make the change; add or update tests; keep typecheck + tests green.
-3. Open a PR against `main` with a short description and screenshots for UI
-   changes.
+3. Open a PR against `main` — GitHub Actions runs typecheck + tests on every PR
+   and on `main` (`.github/workflows/ci.yml`).
+
+## CI & release
+
+- **CI** (`.github/workflows/ci.yml`): every PR and push to `main` runs both
+  typechecks + the full vitest suite. No secrets required — the workflow seeds
+  `wrangler.jsonc` from the committed template and generates throwaway keys for
+  `.dev.vars` (`bash scripts/setup-local.sh --yes`).
+- **Release** (`.github/workflows/release.yml`): pushing a tag `v*` runs the same
+  checks, then deploys to Cloudflare Workers. Requires these **repository
+  secrets**:
+  | Secret | Value |
+  |---|---|
+  | `CLOUDFLARE_API_TOKEN` | API token with Workers Scripts:Edit (+ D1:Edit); create at dash.cloudflare.com → My Profile → API Tokens |
+  | `D1_DATABASE_ID` | the `database_id` of your production splitviewer D1 |
+  | `SPLITWISE_CLIENT_ID` | your PROD Splitwise OAuth app's client id |
+  | `CLOUDFLARE_ACCOUNT_ID` | *(optional)* needed only if the API token can access multiple accounts |
+
+  The worker's secrets (`TOKEN_ENCRYPTION_KEY`, `SESSION_SECRET`,
+  `SPLITWISE_CLIENT_SECRET`) are **not** touched by deploys — set them once with
+  `wrangler secret put` (see README).
+- To cut a release: `git tag vX.Y.Z && git push origin vX.Y.Z`. `npm run deploy`
+  stays available for manual deploys from a configured checkout.
 
 ## Reporting bugs / security
 
