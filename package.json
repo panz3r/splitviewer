@@ -4,6 +4,8 @@
   "scripts": {
     "dev": "wrangler dev",
     "setup-local": "bash scripts/setup-local.sh",
+    "chromium:install": "bash scripts/install-chromium.sh",
+    "chromium:launch": "bash scripts/launch-chromium.sh",
     "test": "vitest run",
     "deploy": "wrangler deploy --minify",
     "cf-typegen": "wrangler types --env-interface CloudflareBindings"

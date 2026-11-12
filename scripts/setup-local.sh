@@ -39,8 +39,10 @@ if [ -f .dev.vars ]; then
   [ -n "$existing_session" ] && SESSION_SECRET="$existing_session"
 fi
 
-SPLITWISE_CLIENT_ID="$(prompt "SPLITWISE_CLIENT_ID (dev Splitwise app)" "$DEV_CLIENT_ID_DEFAULT")"
-SPLITWISE_CLIENT_SECRET="$(prompt "SPLITWISE_CLIENT_SECRET (dev Splitwise app)" "$DEV_CLIENT_SECRET_DEFAULT")"
+# Credential defaults can be overridden via environment (used by CI to seed
+# non-placeholder dummies so OAuth routes behave normally without real creds).
+SPLITWISE_CLIENT_ID="$(prompt "SPLITWISE_CLIENT_ID (dev Splitwise app)" "${SPLITWISE_CLIENT_ID:-$DEV_CLIENT_ID_DEFAULT}")"
+SPLITWISE_CLIENT_SECRET="$(prompt "SPLITWISE_CLIENT_SECRET (dev Splitwise app)" "${SPLITWISE_CLIENT_SECRET:-$DEV_CLIENT_SECRET_DEFAULT}")"
 
 cat > .dev.vars <<EOF
 TOKEN_ENCRYPTION_KEY="$TOKEN_ENCRYPTION_KEY"
