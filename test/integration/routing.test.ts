@@ -1,0 +1,123 @@
+import { env } from "cloudflare:workers";
+import { createExecutionContext, waitOnExecutionContext } from "cloudflare:test";
+import { describe, expect, it } from "vitest";
+import worker from "../../src/index";
+
+// Landing page smoke test. Anonymous users get the marketing page;
+// authenticated users get redirected to the dashboard (session cookie).
+const IncomingRequest = Request<unknown, IncomingRequestCfProperties>;
+
+describe("src/index.tsx", () => {
+	it("GET / (anonymous) renders the landing page", async () => {
+		const request = new IncomingRequest("http://example.com/");
+		const ctx = createExecutionContext();
+		const response = await worker.fetch(request, env, ctx);
+		await waitOnExecutionContext(ctx);
+		expect(response.status).toBe(200);
+		const text = await response.text();
+		expect(text).toContain("SplitViewer");
+		expect(text).toContain("/auth/login");
+	});
+
+	it("homepage renders hero, steps, privacy section and meta", async () => {
+		const request = new IncomingRequest("http://example.com/");
+		const ctx = createExecutionContext();
+		const response = await worker.fetch(request, env, ctx);
+		await waitOnExecutionContext(ctx);
+		const text = await response.text();
+		expect(text).toContain("How it works");
+		expect(text).toContain("Privacy first");
+		expect(text).toContain("/example-card.png");
+		expect(text).toContain("first names and last initials only");
+		expect(text).toContain('name="description"');
+	});
+
+	it("GET /support renders FAQ and issue link", async () => {
+		const request = new IncomingRequest("http://example.com/support");
+		const ctx = createExecutionContext();
+		const response = await worker.fetch(request, env, ctx);
+		await waitOnExecutionContext(ctx);
+		expect(response.status).toBe(200);
+		const text = await response.text();
+		expect(text).toContain("FAQ");
+		expect(text).toContain("takedown");
+		expect(text).toContain("github.com/panz3r/splitviewer/issues");
+	});
+
+	it("GET /example-card.png returns a PNG with no-store (random per request)", async () => {
+		const req = () => {
+			const r = new IncomingRequest("http://example.com/example-card.png");
+			const ctx = createExecutionContext();
+			return worker.fetch(r, env, ctx).then(async (res) => {
+				await waitOnExecutionContext(ctx);
+				return res;
+			});
+		};
+		const a = await req();
+		expect(a.status).toBe(200);
+		expect(a.headers.get("Cache-Control")).toBe("no-store");
+		const aBytes = new Uint8Array(await a.arrayBuffer());
+		expect(Array.from(aBytes.slice(0, 8))).toEqual([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+
+		const b = await req();
+		const bBytes = new Uint8Array(await b.arrayBuffer());
+		// randomized fake data (names/amounts/timestamp) ⇒ two cards must differ
+		const differs =
+			aBytes.length !== bBytes.length || aBytes.some((byte, i) => byte !== bBytes[i]);
+		expect(differs).toBe(true);
+		expect(aBytes.length).toBeGreaterThan(10_000);
+		expect(bBytes.length).toBeGreaterThan(10_000);
+	});
+
+	it("GET /it renders the Italian homepage", async () => {
+		const request = new IncomingRequest("http://example.com/it");
+		const ctx = createExecutionContext();
+		const response = await worker.fetch(request, env, ctx);
+		await waitOnExecutionContext(ctx);
+		expect(response.status).toBe(200);
+		const text = await response.text();
+		expect(text).toContain('lang="it"');
+		expect(text).toContain("Come funziona");
+		expect(text).toContain("Prima la privacy");
+		expect(text).toContain("Continua con Splitwise");
+		// toggle back to EN homepage: flag icon (no text label), aria in page
+		// language + title with target language name
+		expect(text).toContain('class="lang-toggle"');
+		expect(text).toContain('href="/"');
+		expect(text).toContain("Passa all"); // aria-label (apostrophe HTML-escaped)
+		expect(text).toContain('title="English"');
+		expect(text).toContain('viewBox="0 0 60 30"'); // Union Jack SVG
+		expect(text).toContain('hreflang="en"');
+		expect(text).toContain('hreflang="it"');
+		expect(text).toContain('hreflang="x-default"');
+		expect(text).toContain('href="http://example.com/it"');
+	});
+
+	it("GET /it redirects authenticated users to the IT dashboard (language-aware logo round-trip)", async () => {
+		const { signSession } = await import("../../src/domain/sessionService");
+		const cookie = `sw_session=${await signSession("it-user", env.SESSION_SECRET)}`;
+		const request = new IncomingRequest("http://example.com/it", { headers: { Cookie: cookie } });
+		const ctx = createExecutionContext();
+		const response = await worker.fetch(request, env, ctx);
+		await waitOnExecutionContext(ctx);
+		expect(response.status).toBe(302);
+		expect(response.headers.get("Location")).toBe("/it/dashboard");
+	});
+
+	it("GET /it/support renders the Italian FAQ", async () => {
+		const request = new IncomingRequest("http://example.com/it/support");
+		const ctx = createExecutionContext();
+		const response = await worker.fetch(request, env, ctx);
+		await waitOnExecutionContext(ctx);
+		expect(response.status).toBe(200);
+		const text = await response.text();
+		expect(text).toContain('lang="it"');
+		expect(text).toContain("FAQ");
+		expect(text).toContain("Il mio gruppo è pubblico?");
+		expect(text).toContain("la tua dashboard");
+		expect(text).toContain("Segnala un problema");
+		// hreflang alternates + toggle to EN support
+		expect(text).toContain('href="/support"');
+		expect(text).toContain('hreflang="it"');
+	});
+});

@@ -12,45 +12,83 @@ Prerequisites: Node 18+ (24 recommended) and a Cloudflare account (the `wrangler
 CLI is a local dependency).
 
 ```bash
-npm install
-
-# Local D1 + schema
-npx wrangler d1 migrations apply DB --local
-
-# Local dev secrets (never commit!)
-openssl rand -hex 32 > .tmp-key
-printf 'TOKEN_ENCRYPTION_KEY="%s"\n' "$(cat .tmp-key | tr -d '\n')" > .dev.vars
-printf 'SPLITWISE_CLIENT_ID="YOUR_DEV_CLIENT_ID"\n' >> .dev.vars
-printf 'SPLITWISE_CLIENT_SECRET="YOUR_DEV_CLIENT_SECRET"\n' >> .dev.vars
-printf 'SESSION_SECRET="%s"\n' "$(cat .tmp-key | tr -d '\n')" >> .dev.vars
-rm .tmp-key
-# then register a dev Splitwise app (https://secure.splitwise.com/apps) whose
-# single registered callback is http://localhost:8787/auth/callback
-
-npm run dev          # http://localhost:8787
-npm test             # vitest with the Cloudflare Workers pool
+npm run setup-local   # .dev.vars with fresh keys + local D1 schema (idempotent)
+npm run dev           # http://localhost:8787
+npm test              # vitest with the Cloudflare Workers pool
 npx tsc -p tsconfig.json && npx tsc -p test/tsconfig.json
-npx wrangler deploy  # ship it
+npx wrangler deploy   # ship it
 ```
 
-Cloudflare production setup (D1 in **EU jurisdiction**, secrets) is documented in
-the [README](README.md).
+`npm run setup-local` wraps the manual steps (equivalent to):
+
+```bash
+cp .dev.vars.example .dev.vars   # then fill in the values
+npx wrangler d1 migrations apply DB --local
+```
+
+Splitwise OAuth for local testing: Splitwise allows **one callback URL per app**, so
+register a *dev* app (https://secure.splitwise.com/apps) whose single registered
+callback is `http://localhost:8787/auth/callback`, and put its id + secret in
+`.dev.vars`. Placeholder credentials are fine without OAuth (`/auth/login` → 503).
+
+Production setup (D1 in **EU jurisdiction**, secrets, prod Splitwise app) is
+documented in the [README](README.md).
+
+## Code layout (strict MVC)
+
+One-page map with the dependency rules: [`docs/architecture.md`](docs/architecture.md).
+
+```
+src/controllers/   thin Hono routers (HTTP wiring only — no JSX, no SQL, no lang logic)
+src/domain/        business logic: services, framework-agnostic, no env/Context/fetch
+src/repositories/  the only D1 SQL: interface + D1 impl + in-memory impl per repo
+src/ui/            JSX-only page components (props in → JSX out)
+src/middleware/    session (cookies → user) + i18n (path → lang)
+src/lib/           transport/infra: crypto, splitwise client, rate limiting
+src/i18n/          copy in en.json/it.json; Dict type derived (key parity compile-enforced)
+src/wiring.ts      the composition root: env → repositories → services
+```
+
+**Dependency direction:** controllers → wiring → domain → repositories. Nothing in
+`domain/` may import Hono types, `Context`, `env.DB`, or `fetch`; services receive
+repositories/clients via parameters. Presentation never calls services.
 
 ## Ground rules
 
 - **Privacy is the core feature.** Public content may only ever originate from
-  sanitized snapshots (`src/lib/sanitize.ts`): first name + last initial, no
+  sanitized snapshots (`src/domain/sanitizeService.ts`): first name + last initial, no
   emails/ids/avatars/invite links. If you add a feature, add a test that scans
   the output for sensitive strings.
 - **All Cloudflare resources must be created with `jurisdiction: eu`** — this is a
-  project compliance requirement (see `AGENTS.md`).
+  project compliance requirement. Concretely: `wrangler d1 create splitviewer --jurisdiction eu`
+  (if a resource type's `--jurisdiction` flag doesn't exist, flag it before creating).
 - **Secrets never live in code or wrangler.jsonc.** Dev secrets go to `.dev.vars`
-  (gitignored), production uses `wrangler secret put`.
-- **Tests-first for route logic.** Use the existing vitest workers integration +
-  injected-fetch patterns (see `test/` for examples). Weird-but-deterministic
-  Splitwise behavior is documented in code comments, not guessed.
+  (gitignored), production uses `wrangler secret put`. Outbound failure logs stay
+  terse — never log tokens, cookies, or OAuth payloads.
+- **Behavior contracts live in `plans/refactor-mvc.md`** (privacy wall, multi-currency,
+  instant revocation, stale-while-revalidate, cookie `Secure` on http://localhost,
+  Hono registration order, EU jurisdiction). Changing one of those requires a test
+  that pins it.
+- **Tests by layer.** New service logic gets a *unit* test against the in-memory
+  fakes (`test/fakes/`); HTTP behavior gets an *integration* test through the worker
+  (`test/integration/`); D1/crypto guarantees stay in `test/infra/`.
 - Working docs (per-phase plans, gotchas) live in `plans/` and are gitignored —
   put durable *consumer* docs in `README.md` / `SUPPORT.md` / `CONTRIBUTING.md`.
+
+## Troubleshooting
+
+- **Orphaned local migrations after recreating D1** — local D1 state is keyed by
+  `database_id`, so recreating the database leaves `--local` migrations unapplied.
+  Re-run `npx wrangler d1 migrations apply DB --local`.
+- **Login broken in Safari on localhost** — cookies derive `Secure` from the request
+  protocol; Safari refuses Secure cookies on `http://localhost`. Test at
+  `http://localhost:8787` (not https proxies) or use another browser.
+- **Two `npm test` runs colliding** — concurrent vitest runs share `.wrangler` local
+  state; run them consecutively.
+- **Dashboard shows "connection expired"** — the stored Splitwise token was rejected
+  (401). Press reconnect, or re-run the OAuth flow. Refresh tokens are rarely issued
+  by Splitwise (stored as `""`), so expired tokens keep serving stale public snapshots
+  until the owner reconnects.
 
 ## Workflow
 

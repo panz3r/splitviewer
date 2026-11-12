@@ -259,3 +259,28 @@ export async function fetchCurrentUser(
     avatarUrl: parsePictureUrl(user?.picture ?? null),
   };
 }
+
+// ---- Client interface (MVC refactor phase 02.5) ------------------------------
+// Domain services depend on narrow structural slices of this interface (e.g.
+// Pick<SplitwiseClient, "fetchGroup">), so unit tests can pass partial fakes.
+
+export interface SplitwiseClient {
+  exchangeCodeForToken(input: {
+    code: string;
+    clientId: string;
+    clientSecret: string;
+    redirectUri: string;
+  }): Promise<TokenResult>;
+  fetchCurrentUser(accessToken: string): Promise<SplitwiseUser>;
+  fetchGroups(accessToken: string): Promise<SplitwiseGroup[]>;
+  fetchGroup(accessToken: string, groupId: string): Promise<RawGroup>;
+}
+
+export function createHttpSplitwiseClient(fetchImpl: typeof fetch = fetch): SplitwiseClient {
+  return {
+    exchangeCodeForToken: (input) => exchangeCodeForToken(input, fetchImpl),
+    fetchCurrentUser: (token) => fetchCurrentUser(token, fetchImpl),
+    fetchGroups: (token) => fetchGroups(token, fetchImpl),
+    fetchGroup: (token, groupId) => fetchGroup(token, groupId, fetchImpl),
+  };
+}
