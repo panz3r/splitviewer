@@ -7,6 +7,7 @@ import { sanitizeGroup, type SanitizedSnapshot } from "./lib/sanitize";
 import { decAccessToken } from "./middleware";
 import { fetchGroup, SplitwiseAuthError, type RawGroup } from "./lib/splitwise";
 import { refreshUserToken } from "./lib/users";
+import { D1SharesRepo } from "./repositories/sharesRepo";
 import { PageShell } from "./ui/components";
 import type { AppEnv } from "./types";
 
@@ -26,11 +27,7 @@ export async function resolvePublicView(
 ): Promise<PublicView> {
   const notFound: PublicView = { status: 404, xCache: "fresh", snapshot: null, asOfSeconds: null };
 
-  const share = await env.DB.prepare(
-    "SELECT user_id, splitwise_group_id FROM shares WHERE slug = ?1 AND is_active = 1",
-  )
-    .bind(slug)
-    .first<{ user_id: string; splitwise_group_id: string }>();
+  const share = await new D1SharesRepo(env).activeBySlug(slug);
   if (!share) return notFound;
 
   const cache = await getCache(env, slug);
@@ -44,14 +41,14 @@ export async function resolvePublicView(
     const owner = await env.DB.prepare(
       "SELECT id, splitwise_user_id, encrypted_access_token, token_expiry, avatar_url, first_name FROM users WHERE id = ?1",
     )
-      .bind(share.user_id)
+      .bind(share.userId)
       .first<{ id: string; splitwise_user_id: string; encrypted_access_token: string; token_expiry: number | null; avatar_url: string | null; first_name: string | null }>();
     if (!owner) return cache ? { status: 200, xCache: "stale", snapshot: cache.snapshot, asOfSeconds: cache.lastFetchedAt } : notFound;
 
     let token = await decAccessToken(owner, env);
     const rawGroup = await (async (): Promise<RawGroup> => {
       try {
-        return await fetchGroup(token, share.splitwise_group_id, fetchImpl);
+        return await fetchGroup(token, share.groupId, fetchImpl);
       } catch (error) {
         // 401 → one automated token-refresh attempt then a single retry
         // (upstream Phase 6). If refresh is impossible (no refresh token stored —
@@ -67,7 +64,7 @@ export async function resolvePublicView(
           .first<{ id: string; splitwise_user_id: string; encrypted_access_token: string; token_expiry: number | null; avatar_url: string | null; first_name: string | null }>();
         if (!freshOwner) throw error;
         token = await decAccessToken(freshOwner, env);
-        return await fetchGroup(token, share.splitwise_group_id, fetchImpl);
+        return await fetchGroup(token, share.groupId, fetchImpl);
       }
     })();
 
@@ -203,11 +200,7 @@ export const publicView = new Hono<AppEnv>()
 
     // Unknown vs revoked must be indistinguishable, and revocation also kills
     // the cache so a revoked share can never "flash" its snapshot again.
-    const active = await c.env.DB.prepare(
-      "SELECT 1 FROM shares WHERE slug = ?1 AND is_active = 1",
-    )
-      .bind(slug)
-      .first();
+    const active = await new D1SharesRepo(c.env).isActive(slug);
     if (!active) {
       await deleteCache(c.env, slug);
       return c.html(<NotFoundPage origin={origin} />, 404);

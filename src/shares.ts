@@ -6,6 +6,7 @@ import type { Context } from "hono";
 import { nanoid } from "nanoid";
 import { requireSession } from "./middleware";
 import { deleteCache } from "./lib/cache";
+import { D1SharesRepo } from "./repositories/sharesRepo";
 import type { Lang } from "./i18n";
 import type { AppEnv } from "./types";
 
@@ -86,20 +87,16 @@ export const shares = new Hono<AppEnv>()
     if (!input) return invalid(c);
 
     const user = c.get("user");
+    const shares = new D1SharesRepo(c.env);
     let slug = nanoid(SLUG_LENGTH);
     for (let attempt = 0; attempt < 3; attempt++) {
       try {
-        await c.env.DB.batch([
-          c.env.DB.prepare(
-            `INSERT INTO shares (slug, user_id, splitwise_group_id, group_name)
-             VALUES (?1, ?2, ?3, ?4)
-             ON CONFLICT(user_id, splitwise_group_id) DO UPDATE SET
-               slug = ?1, group_name = ?4, is_active = 1`,
-          ).bind(slug, user.id, input.groupId, input.groupName),
-          c.env.DB.prepare(
-            "SELECT slug, is_active FROM shares WHERE user_id = ?1 AND splitwise_group_id = ?2",
-          ).bind(user.id, input.groupId),
-        ]);
+        await shares.createOrRotate({
+          userId: user.id,
+          splitwiseGroupId: input.groupId,
+          groupName: input.groupName,
+          slug,
+        });
         break;
       } catch {
         // Unknown D1/SQLite failure: on a slug-PK collision (astronomically
@@ -127,12 +124,8 @@ export const shares = new Hono<AppEnv>()
     if (!input) return invalid(c);
 
     const user = c.get("user");
-    const res = await c.env.DB.prepare(
-      "UPDATE shares SET is_active = 0 WHERE slug = ?1 AND user_id = ?2",
-    )
-      .bind(input.slug, user.id)
-      .run();
-    if ((res.meta.changes ?? 0) === 0) {
+    const changed = await new D1SharesRepo(c.env).deactivate(user.id, input.slug);
+    if (!changed) {
       return isJson(c)
         ? c.json({ ok: false, error: "not_found" }, 404)
         : c.redirect(`${dashPath(input.lang)}?err=not_found`, 303);

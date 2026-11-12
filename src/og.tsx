@@ -8,6 +8,7 @@ import { Hono } from "hono";
 import { ImageResponse, cache } from "@cf-wasm/og/workerd";
 import { OgCard } from "./ui/og-card";
 import { resolvePublicView } from "./public";
+import { D1SharesRepo } from "./repositories/sharesRepo";
 import type { AppEnv } from "./types";
 
 export const ogImage = new Hono<AppEnv>()
@@ -16,11 +17,7 @@ export const ogImage = new Hono<AppEnv>()
     const slug = c.req.param("slug");
 
     // Same gating as the public page: revoked/missing → identical 404s.
-    const active = await c.env.DB.prepare(
-      "SELECT 1 FROM shares WHERE slug = ?1 AND is_active = 1",
-    )
-      .bind(slug)
-      .first();
+    const active = await new D1SharesRepo(c.env).isActive(slug);
     if (!active) return c.text("Not found", 404);
 
     const view = await resolvePublicView(c.env, slug);

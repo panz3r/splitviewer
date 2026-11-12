@@ -4,6 +4,7 @@
 import { Hono } from "hono";
 import { decAccessToken, requireSession } from "./middleware";
 import { fetchGroups, SplitwiseAuthError, type SplitwiseGroup } from "./lib/splitwise";
+import { D1SharesRepo } from "./repositories/sharesRepo";
 import { getDict, type Dict, type Lang } from "./i18n";
 import { PageShell, Flash, type PageShellProps } from "./ui/components";
 import type { AppEnv, UserRow } from "./types";
@@ -199,13 +200,9 @@ function dashboardPage(c: { env: AppEnv["Bindings"]; req: { url: string; query: 
       throw error;
     }
 
-    const shareRows = await c.env.DB.prepare(
-      "SELECT splitwise_group_id, slug, is_active FROM shares WHERE user_id = ?1",
-    )
-      .bind(user.id)
-      .all<{ splitwise_group_id: string; slug: string; is_active: number }>();
+    const shareRows = await new D1SharesRepo(c.env).byUser(user.id);
     const sharesByGroupId = new Map(
-      (shareRows.results ?? []).map((s) => [s.splitwise_group_id, s]),
+      shareRows.map((s) => [s.splitwise_group_id, s]),
     );
 
     // Splitwise returns id 0 ("Non-group expenses") in get_groups — not
