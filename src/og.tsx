@@ -7,7 +7,7 @@
 import { Hono } from "hono";
 import { ImageResponse, cache } from "@cf-wasm/og/workerd";
 import { OgCard } from "./ui/og-card";
-import { resolvePublicView } from "./public";
+import { resolvePublicViewForEnv } from "./wiring";
 import { D1SharesRepo } from "./repositories/sharesRepo";
 import type { AppEnv } from "./types";
 
@@ -20,7 +20,7 @@ export const ogImage = new Hono<AppEnv>()
     const active = await new D1SharesRepo(c.env).isActive(slug);
     if (!active) return c.text("Not found", 404);
 
-    const view = await resolvePublicView(c.env, slug);
+    const view = await resolvePublicViewForEnv(c.env, slug);
     if (view.status === 502 || !view.snapshot) {
       return c.text("Snapshot unavailable", 502);
     }

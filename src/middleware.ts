@@ -4,7 +4,6 @@ import type { Context, Next } from "hono";
 import { getCookie } from "hono/cookie";
 import { verifySession, SESSION_COOKIE } from "./domain/sessionService";
 import { D1UsersRepo } from "./repositories/usersRepo";
-import { decrypt } from "./lib/crypto";
 import type { AppEnv, UserRow } from "./types";
 
 // Compatibility re-exports during the MVC transition — new code imports the
@@ -44,12 +43,4 @@ export async function requireSession(c: Context<AppEnv>, next: Next) {
   }
   c.set("user", row);
   await next();
-}
-
-/** Decrypts the user's stored Splitwise access token for live API calls. */
-export async function decAccessToken(
-  user: UserRow,
-  env: AppEnv["Bindings"],
-): Promise<string> {
-  return decrypt(user.encrypted_access_token, env.TOKEN_ENCRYPTION_KEY);
 }

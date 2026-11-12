@@ -3,14 +3,12 @@
 // (dashboard buttons) get redirects; JSON callers get JSON bodies.
 import { Hono } from "hono";
 import type { Context } from "hono";
-import { nanoid } from "nanoid";
 import { requireSession } from "./middleware";
-import { deleteCache } from "./lib/cache";
-import { D1SharesRepo } from "./repositories/sharesRepo";
+import { shareServiceForEnv, SLUG_LENGTH } from "./wiring";
 import type { Lang } from "./i18n";
 import type { AppEnv } from "./types";
 
-export const SLUG_LENGTH = 16;
+export { SLUG_LENGTH };
 
 function isJson(c: Context): boolean {
   return (c.req.header("content-type") ?? "").includes("application/json");
@@ -79,44 +77,28 @@ export const shares = new Hono<AppEnv>()
 
   .use("/api/shares/*", requireSession)
 
-  // Create (or rotate) a share for a group. Upsert keyed on
-  // (user_id, splitwise_group_id): re-sharing replaces the slug, quietly
-  // killing any old public link WITHOUT needing cascade deletes elsewhere.
+  // Create (or rotate) a share for a group (see domain/shareService for the
+  // upsert semantics and retry policy).
   .post("/api/shares/create", async (c) => {
     const input = await parseCreateInput(c);
     if (!input) return invalid(c);
 
     const user = c.get("user");
-    const shares = new D1SharesRepo(c.env);
-    let slug = nanoid(SLUG_LENGTH);
-    for (let attempt = 0; attempt < 3; attempt++) {
-      try {
-        await shares.createOrRotate({
-          userId: user.id,
-          splitwiseGroupId: input.groupId,
-          groupName: input.groupName,
-          slug,
-        });
-        break;
-      } catch {
-        // Unknown D1/SQLite failure: on a slug-PK collision (astronomically
-        // rare) rotate and retry; anything else a third attempt will still
-        // fail loudly below if slug never got written.
-        slug = nanoid(SLUG_LENGTH);
-        if (attempt === 2) {
-          console.error("shares/create: failed after 3 attempts");
-          return isJson(c)
-            ? c.json({ ok: false, error: "share_write_failed" }, 500)
-            : c.redirect("/dashboard?err=share_write_failed", 303);
-        }
+    try {
+      const slug = await shareServiceForEnv(c.env).create(user.id, input.groupId, input.groupName);
+      const origin = new URL(c.req.url).origin;
+      if (isJson(c)) {
+        return c.json({ ok: true, slug, url: `${origin}/p/${slug}` }, 201);
       }
+      return c.redirect(`${dashPath(input.lang)}?msg=created`, 303);
+    } catch (error) {
+      if (error instanceof Error && error.name === "ShareWriteError") {
+        return isJson(c)
+          ? c.json({ ok: false, error: "share_write_failed" }, 500)
+          : c.redirect(`${dashPath(input.lang)}?err=share_write_failed`, 303);
+      }
+      throw error;
     }
-
-    const origin = new URL(c.req.url).origin;
-    if (isJson(c)) {
-      return c.json({ ok: true, slug, url: `${origin}/p/${slug}` }, 201);
-    }
-    return c.redirect(`${dashPath(input.lang)}?msg=created`, 303);
   })
 
   .post("/api/shares/revoke", async (c) => {
@@ -124,15 +106,12 @@ export const shares = new Hono<AppEnv>()
     if (!input) return invalid(c);
 
     const user = c.get("user");
-    const changed = await new D1SharesRepo(c.env).deactivate(user.id, input.slug);
+    const changed = await shareServiceForEnv(c.env).revoke(user.id, input.slug);
     if (!changed) {
       return isJson(c)
         ? c.json({ ok: false, error: "not_found" }, 404)
         : c.redirect(`${dashPath(input.lang)}?err=not_found`, 303);
     }
-    // Revocation must be instant: the public page also checks is_active, but
-    // dropping the cache makes "revoked" and "missing" truly identical.
-    await deleteCache(c.env, input.slug);
     return isJson(c)
       ? c.json({ ok: true, active: false })
       : c.redirect(`${dashPath(input.lang)}?msg=revoked`, 303);

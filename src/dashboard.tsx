@@ -2,9 +2,12 @@
 // with share actions, on the shared shell. The share-button script is the
 // only client JS in the app (public pages stay JS-free by design).
 import { Hono } from "hono";
-import { decAccessToken, requireSession } from "./middleware";
-import { fetchGroups, SplitwiseAuthError, type SplitwiseGroup } from "./lib/splitwise";
+import { requireSession } from "./middleware";
+import { buildDashboard } from "./domain/dashboardService";
+import { createHttpSplitwiseClient } from "./lib/splitwise";
+import { decAccessToken } from "./wiring";
 import { D1SharesRepo } from "./repositories/sharesRepo";
+import { decrypt } from "./lib/crypto";
 import { getDict, type Dict, type Lang } from "./i18n";
 import { PageShell, Flash, type PageShellProps } from "./ui/components";
 import type { AppEnv, UserRow } from "./types";
@@ -139,85 +142,42 @@ function GroupCard(
   );
 }
 
-// --- Sectioning (M4) -------------------------------------------------------
-// "Archived" follows Splitwise's own rule: settled up for more than 40 days.
-const ARCHIVE_AFTER_MS = 40 * 24 * 60 * 60 * 1000;
-
-function isSettled(group: { simplifiedDebts: Array<{ amount: string }> }): boolean {
-  return group.simplifiedDebts.every((d) => Number(d.amount) === 0);
-}
-
-function sortByLastUpdateDesc(groups: SplitwiseGroup[]): SplitwiseGroup[] {
-  return [...groups].sort((a, b) =>
-    String(b.updatedAt ?? "").localeCompare(String(a.updatedAt ?? "")),
-  );
-}
-
-function sectionize(
-  groups: SplitwiseGroup[],
-  sharesByGroupId: Map<string, ShareRow>,
-): { key: "public" | "private" | "archived"; groups: SplitwiseGroup[] }[] {
-  const archived = groups.filter(
-    (g) =>
-      isSettled(g) &&
-      typeof g.updatedAt === "string" &&
-      Date.now() - new Date(g.updatedAt).getTime() > ARCHIVE_AFTER_MS,
-  );
-  const rest = groups.filter((g) => !archived.includes(g));
-  const publicGroups = rest.filter((g) => sharesByGroupId.get(g.id)?.is_active === 1);
-  const privateGroups = rest.filter((g) => sharesByGroupId.get(g.id)?.is_active !== 1);
-  return [
-    { key: "public", groups: sortByLastUpdateDesc(publicGroups) },
-    { key: "private", groups: sortByLastUpdateDesc(privateGroups) },
-    { key: "archived", groups: sortByLastUpdateDesc(archived) },
-  ];
-}
+// Sectioning logic (public/private/archived + the 40-day archive rule) lives
+// in domain/dashboardService.ts; this controller only renders its output.
 
 function dashboardPage(c: { env: AppEnv["Bindings"]; req: { url: string; query: (k: string) => string | undefined } }, user: UserRow, lang: Lang): Promise<PageShellProps> {
   return (async () => {
     const t = getDict(lang);
 
-    let groups: SplitwiseGroup[];
-    try {
-      const token = await decAccessToken(user, c.env);
-      groups = await fetchGroups(token);
-    } catch (error) {
-      if (error instanceof SplitwiseAuthError && error.status === 401) {
-        // Token no longer accepted: reconnect page instead of a 500.
-        return {
-          title: `${t.dash.reconnectTitle} — SplitViewer`,
-          lang,
-          hideNav: true,
-          children: (
-            <div class="card">
-              <h1 style="margin-top: 0;">{t.dash.reconnectTitle}</h1>
-              <p>{t.dash.reconnectBody}</p>
-              <a class="btn btn--primary" href="/auth/login">{t.dash.reconnectCta}</a>
-            </div>
-          ),
-        };
-      }
-      throw error;
-    }
-
-    const shareRows = await new D1SharesRepo(c.env).byUser(user.id);
-    const sharesByGroupId = new Map(
-      shareRows.map((s) => [s.splitwise_group_id, s]),
+    const result = await buildDashboard(
+      user,
+      lang,
+      { msg: c.req.query("msg"), err: c.req.query("err") },
+      {
+        decryptToken: (encrypted) => decrypt(encrypted, c.env.TOKEN_ENCRYPTION_KEY),
+        splitwise: createHttpSplitwiseClient(),
+        shares: new D1SharesRepo(c.env),
+      },
     );
 
-    // Splitwise returns id 0 ("Non-group expenses") in get_groups — not
-    // shareable; filter it out of the dashboard.
-    const visibleGroups = groups.filter((g) => g.id !== "0");
+    if (result.kind === "reconnect") {
+      // Token no longer accepted: reconnect page instead of a 500.
+      return {
+        title: `${t.dash.reconnectTitle} — SplitViewer`,
+        lang,
+        hideNav: true,
+        children: (
+          <div class="card">
+            <h1 style="margin-top: 0;">{t.dash.reconnectTitle}</h1>
+            <p>{t.dash.reconnectBody}</p>
+            <a class="btn btn--primary" href="/auth/login">{t.dash.reconnectCta}</a>
+          </div>
+        ),
+      };
+    }
 
-    const msg = c.req.query("msg");
-    const err = c.req.query("err");
+    const { sections, flashMsg, flashErr } = result.data;
     const origin = new URL(c.req.url).origin;
-    const flashMsg =
-      msg && msg in t.dash ? t.dash[msg as "flashCreated" | "flashRevoked"] : undefined;
-    const flashErr =
-      err && err in t.dash
-        ? t.dash[err as "flashInvalid" | "flashNotFound" | "flashWriteFailed"]
-        : undefined;
 
     return {
       title: t.dash.title,
@@ -237,12 +197,12 @@ function dashboardPage(c: { env: AppEnv["Bindings"]; req: { url: string; query: 
 
           <Flash msg={flashMsg} err={flashErr} />
 
-          {visibleGroups.length === 0 ? (
+          {sections.every((s) => s.groups.length === 0) ? (
             <div class="card">
               <p style="margin: 0;">{t.dash.empty}</p>
             </div>
           ) : (
-            sectionize(visibleGroups, sharesByGroupId).map(
+            sections.map(
               (section) =>
                 section.groups.length > 0 && (
                   <>
@@ -251,13 +211,12 @@ function dashboardPage(c: { env: AppEnv["Bindings"]; req: { url: string; query: 
                     </h2>
                     <div class="ggrid">
                       {section.groups.map((g) => {
-                        const share = sharesByGroupId.get(g.id);
                         return (
                           <GroupCard
                             groupId={g.id}
-                            name={g.name || `Group ${g.id}`}
+                            name={g.name}
                             avatarUrl={g.avatarUrl}
-                            share={share}
+                            share={g.share ? { slug: g.share.slug, is_active: g.share.isActive ? 1 : 0 } : undefined}
                             origin={origin}
                             lang={lang}
                             t={t}
