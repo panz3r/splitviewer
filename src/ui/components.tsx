@@ -8,6 +8,8 @@ import { getDict, type Lang } from "../i18n";
 /** Single URL constant; flip here if the repo moves. */
 export const REPO_URL = "https://github.com/panz3r/splitviewer";
 export const REPO_ISSUES_URL = `${REPO_URL}/issues`;
+/** New-issue form with the guided report template (takedowns, bugs, privacy). */
+export const REPO_REPORT_URL = `${REPO_URL}/issues/new?template=report.yml`;
 
 export interface PageShellProps {
   title: string;
@@ -151,7 +153,7 @@ export const PageShell: FC<PageShellProps> = (props) => {
               <span>{t.footer.notAffiliated}</span>
               <span class="navlinks">
                 <a href={lang === "it" ? "/it/support" : "/support"}>{t.nav.support}</a>
-                <a href={REPO_ISSUES_URL} target="_blank" rel="noopener">
+                <a href={REPO_REPORT_URL} target="_blank" rel="noopener">
                   {t.nav.reportIssue}
                 </a>
               </span>
