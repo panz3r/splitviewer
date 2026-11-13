@@ -81,6 +81,15 @@ vitest with the Cloudflare workers plugin. Tests live by layer in
 - **Local D1 state is keyed by `database_id`**: recreating the database — even
   with the same name — orphans local migrations until
   `npx wrangler d1 migrations apply DB --local` is re-run.
+- **OAuth rotation**: when rotating the Splitwise app, the registered callback
+  must match the worker's `/auth/callback` exactly, and
+  `SPLITWISE_CLIENT_SECRET` must be re-applied to the worker. A wrong pair
+  surfaces as `invalid_client` at token exchange (some providers answer 400,
+  not 401) — apply secrets with `printf '%s' 'SECRET' | npx wrangler secret
+  put …` (`echo` appends a newline that becomes part of the secret). Token
+  exchange failures log `status (error — description)` server-side
+  (`wrangler tail`); the response body is never logged raw and clients stay
+  terse.
 - **wrangler.jsonc**: adding a var/binding requires `npm run cf-typegen`
   (changing a value doesn't). The file is gitignored; `wrangler.example.jsonc`
   is the template.
