@@ -75,6 +75,12 @@ repositories/clients via parameters. Presentation never calls services.
 - **Tests by layer.** New service logic gets a *unit* test against the in-memory
   fakes (`test/fakes/`); HTTP behavior gets an *integration* test through the worker
   (`test/integration/`); D1/crypto guarantees stay in `test/infra/`.
+- **Repo links are deploy-time config.** In-app report/project links resolve from
+  the `REPO_URL` wrangler var (`src/lib/links.ts`), defaulting to the upstream
+  repo. `npm run setup-local` seeds it from `git remote get-url origin`; the
+  release workflow injects `github.server_url/github.repository`, so forks'
+  users report to the fork's tracker. Only *adding* vars needs
+  `npm run cf-typegen` — changing REPO_URL's value doesn't.
 - Working docs (per-phase plans, gotchas) live in `plans/` and are gitignored —
   put durable *consumer* docs in `README.md` / `SUPPORT.md` / `CONTRIBUTING.md`.
 

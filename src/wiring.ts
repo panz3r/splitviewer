@@ -5,12 +5,18 @@
 import { decrypt } from "./lib/crypto";
 import { createHttpSplitwiseClient } from "./lib/splitwise";
 import { refreshUserToken } from "./lib/users";
+import { repoUrlFromEnv } from "./lib/links";
 import { createRepos } from "./repositories";
 import { createPublicViewService, type PublicViewDeps } from "./domain/publicViewService";
 import { createShareService, SLUG_LENGTH } from "./domain/shareService";
 import { nanoid } from "nanoid";
 
 export { SLUG_LENGTH };
+
+/** Resolved repo URL for in-app report/project links (REPO_URL var or upstream default). */
+export function repoUrl(env: CloudflareBindings): string {
+  return repoUrlFromEnv(env);
+}
 
 /** Decrypts a user's stored Splitwise access token for live API calls. */
 export function decAccessToken(

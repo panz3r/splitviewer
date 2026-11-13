@@ -55,13 +55,17 @@ jobs:
 
       # wrangler.jsonc is gitignored by design — rebuild it for CI from the
       # committed template + repository secrets (deployment-specific values).
+      # REPO_URL is injected from the GitHub repository itself, so forks get
+      # in-app report links pointing at their own issue tracker.
       - name: Build wrangler.jsonc from secrets
         env:
           D1_DATABASE_ID: ${{ secrets.D1_DATABASE_ID }}
           SPLITWISE_CLIENT_ID: ${{ secrets.SPLITWISE_CLIENT_ID }}
+          REPO_URL: ${{ github.server_url }}/${{ github.repository }}
         run: |
           sed -e "s/REPLACE_ME_DATABASE_ID/${D1_DATABASE_ID}/" \
               -e "s/REPLACE_ME_SPLITWISE_CLIENT_ID/${SPLITWISE_CLIENT_ID}/" \
+              -e "s|https://github.com/panz3r/splitviewer|${REPO_URL}|" \
               wrangler.example.jsonc > wrangler.jsonc
           grep -q REPLACE_ME wrangler.jsonc && {
             echo "::error::D1_DATABASE_ID and SPLITWISE_CLIENT_ID secrets must be set"

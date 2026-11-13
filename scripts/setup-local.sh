@@ -55,12 +55,20 @@ echo "==> wrote .dev.vars (gitignored)"
 # 2. Wrangler config (deployment-specific, gitignored) ------------------------
 if [ ! -f wrangler.jsonc ]; then
   cp wrangler.example.jsonc wrangler.jsonc
+  # Point in-app report links at YOUR fork (falls back to the canonical repo
+  # when there is no git remote, e.g. a tarball checkout).
+  SEED_REPO_URL="$(git remote get-url origin 2>/dev/null | sed -E 's#^git@([^:]+):#https://\1/#; s#\.git$##' || true)"
+  if [ -n "$SEED_REPO_URL" ]; then
+    sed "s|\"REPO_URL\": \"https://github.com/panz3r/splitviewer\"|\"REPO_URL\": \"${SEED_REPO_URL}\"|" \
+      wrangler.jsonc > wrangler.jsonc.tmp && mv wrangler.jsonc.tmp wrangler.jsonc
+  fi
   echo "==> seeded wrangler.jsonc from wrangler.example.jsonc"
   cat <<'EOF'
     NOTE: fill in wrangler.jsonc before deploying:
       - database_id:  stamp the id printed by
             npx wrangler d1 create splitviewer --jurisdiction eu
       - SPLITWISE_CLIENT_ID: your PROD Splitwise app's client id
+      - REPO_URL: kept from your git origin (in-app report links point there)
     (Tests and local dev work without these; only `wrangler deploy` needs them.)
 EOF
 fi

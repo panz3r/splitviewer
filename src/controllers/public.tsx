@@ -5,7 +5,8 @@
 // revocation beats the cache; missing and revoked slugs render identically.
 import { Hono } from "hono";
 import { deleteCache } from "../lib/cache";
-import { resolvePublicViewForEnv } from "../wiring";
+import { requireSession } from "../middleware/session";
+import { repoUrl, resolvePublicViewForEnv } from "../wiring";
 import { D1SharesRepo } from "../repositories/sharesRepo";
 import {
   PublicDashboard,
@@ -25,18 +26,18 @@ export const publicView = new Hono<AppEnv>()
     const active = await new D1SharesRepo(c.env).isActive(slug);
     if (!active) {
       await deleteCache(c.env, slug);
-      return c.html(<PublicNotFoundPage origin={origin} />, 404);
+      return c.html(<PublicNotFoundPage origin={origin} repoUrl={repoUrl(c.env)} />, 404);
     }
 
     const view = await resolvePublicViewForEnv(c.env, slug);
     c.header("X-Cache", view.xCache);
     const html =
       view.status === 404 ? (
-        <PublicNotFoundPage origin={origin} />
+        <PublicNotFoundPage origin={origin} repoUrl={repoUrl(c.env)} />
       ) : view.status === 502 || !view.snapshot ? (
-        <PublicUnavailablePage />
+        <PublicUnavailablePage repoUrl={repoUrl(c.env)} />
       ) : (
-        <PublicDashboard snapshot={view.snapshot} asOfSeconds={view.asOfSeconds} slug={slug} origin={origin} />
+        <PublicDashboard snapshot={view.snapshot} asOfSeconds={view.asOfSeconds} slug={slug} origin={origin} repoUrl={repoUrl(c.env)} />
       );
     // No-store for 404/502; short browser cache for 200 (crawlers re-fetch, fine).
     c.header("Cache-Control", view.status === 200 ? "max-age=30" : "no-store");

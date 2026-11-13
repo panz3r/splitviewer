@@ -1,16 +1,18 @@
 // Support view (presentation only): FAQ, privacy explainer, abuse/takedown
 // path. EN/IT share one component so structure can't drift.
 import { getDict, type Lang } from "../i18n";
-import { REPO_REPORT_URL, REPO_URL, type PageShellProps } from "./components";
+import { repoLinks, type PageShellProps } from "./components";
 
-export function supportPage(props: { lang: Lang; origin: string }): PageShellProps {
-  const { lang, origin } = props;
+export function supportPage(props: { lang: Lang; origin: string; repoUrl?: string }): PageShellProps {
+  const { lang, origin, repoUrl } = props;
   const t = getDict(lang);
+  const links = repoLinks(repoUrl);
 
   return {
     title: t.meta.supportTitle,
     description: t.meta.supportDescription,
     lang,
+    repoUrl,
     langToggle: {
       href: lang === "it" ? "/support" : "/it/support",
       lang: lang === "it" ? "en" : "it",
@@ -65,7 +67,7 @@ export function supportPage(props: { lang: Lang; origin: string }): PageShellPro
           <h2 style="margin-top: 0;">{t.support.reportTitle}</h2>
           <p>
             {t.support.reportBody}{" "}
-            <a href={REPO_REPORT_URL} target="_blank" rel="noopener">
+            <a href={links.report} target="_blank" rel="noopener">
               {t.nav.reportIssue}
             </a>
             .
@@ -76,8 +78,8 @@ export function supportPage(props: { lang: Lang; origin: string }): PageShellPro
           <h2 style="margin-top: 0;">{t.support.projectTitle}</h2>
           <p>
             {t.support.projectBody}{" "}
-            <a href={REPO_URL} target="_blank" rel="noopener">
-              {REPO_URL}
+            <a href={links.repo} target="_blank" rel="noopener">
+              {links.repo}
             </a>
             .
           </p>

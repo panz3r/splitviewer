@@ -9,6 +9,7 @@ import { createHttpSplitwiseClient } from "../lib/splitwise";
 import { D1SharesRepo } from "../repositories/sharesRepo";
 import { PageShell } from "../ui/components";
 import { dashboardPage, dashboardReconnectPage } from "../ui/dashboardPage";
+import { repoUrl } from "../wiring";
 import type { AppEnv } from "../types";
 import type { Lang } from "../i18n";
 
@@ -27,12 +28,13 @@ async function renderDashboard(c: Context<AppEnv>, lang: Lang) {
   return c.html(
     <PageShell
       {...(result.kind === "reconnect"
-        ? dashboardReconnectPage(lang)
+        ? dashboardReconnectPage(lang, repoUrl(c.env))
         : dashboardPage({
             lang,
             user: { avatarUrl: user.avatar_url, firstName: user.first_name },
             data: result.data,
             origin: new URL(c.req.url).origin,
+            repoUrl: repoUrl(c.env),
           }))}
     />,
   );
