@@ -2,10 +2,10 @@
 // pitch. EN/IT share one component so structure can't drift. All data arrives
 // via props; no I/O, no business logic.
 import { getDict, type Lang } from "../i18n";
-import { REPO_REPORT_URL, type PageShellProps } from "./components";
+import { repoLinks, type PageShellProps } from "./components";
 
-export function homePage(props: { lang: Lang; origin: string }): PageShellProps {
-  const { lang, origin } = props;
+export function homePage(props: { lang: Lang; origin: string; repoUrl?: string }): PageShellProps {
+  const { lang, origin, repoUrl } = props;
   const t = getDict(lang);
   const basePath = lang === "it" ? "/it" : "";
 
@@ -13,6 +13,7 @@ export function homePage(props: { lang: Lang; origin: string }): PageShellProps 
     title: t.meta.homeTitle,
     description: t.meta.homeDescription,
     lang,
+    repoUrl,
     langToggle: {
       href: lang === "it" ? "/" : "/it",
       lang: lang === "it" ? "en" : "it",
@@ -105,7 +106,7 @@ export function homePage(props: { lang: Lang; origin: string }): PageShellProps 
           <p class="muted small" style="margin-top: .8rem;">
             {t.home.privacyMore}{" "}
             <a href={lang === "it" ? "/it/support" : "/support"}>{t.nav.support}</a> ·{" "}
-            <a href={REPO_REPORT_URL} target="_blank" rel="noopener">
+            <a href={repoLinks(repoUrl).report} target="_blank" rel="noopener">
               {t.nav.reportIssue}
             </a>
           </p>

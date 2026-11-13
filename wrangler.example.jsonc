@@ -9,7 +9,11 @@
   "vars": {
     // Your PROD Splitwise OAuth app's client id (its callback URL must be
     // https://<your-worker-domain>/auth/callback).
-    "SPLITWISE_CLIENT_ID": "REPLACE_ME_SPLITWISE_CLIENT_ID"
+    "SPLITWISE_CLIENT_ID": "REPLACE_ME_SPLITWISE_CLIENT_ID",
+    // Repo links for the in-app "Report an issue" footer/home/support links.
+    // Point this at YOUR fork so your users report to your tracker; the
+    // release workflow injects the GitHub repository automatically.
+    "REPO_URL": "https://github.com/panz3r/splitviewer"
   },
   "rules": [
     {

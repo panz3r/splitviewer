@@ -136,11 +136,12 @@ const GroupCard: FC<{
 };
 
 /** Reconnect page (token rejected by Splitwise). */
-export function dashboardReconnectPage(lang: Lang): PageShellProps {
+export function dashboardReconnectPage(lang: Lang, repoUrl?: string): PageShellProps {
   const t = getDict(lang);
   return {
     title: `${t.dash.reconnectTitle} — SplitViewer`,
     lang,
+    repoUrl,
     hideNav: true,
     children: (
       <div class="card">
@@ -157,13 +158,15 @@ export function dashboardPage(props: {
   user: { avatarUrl: string | null; firstName: string | null };
   data: DashboardData;
   origin: string;
+  repoUrl?: string;
 }): PageShellProps {
-  const { lang, user, data, origin } = props;
+  const { lang, user, data, origin, repoUrl } = props;
   const t = getDict(lang);
 
   return {
     title: t.dash.title,
     lang,
+    repoUrl,
     langToggle: {
       href: lang === "it" ? "/dashboard" : "/it/dashboard",
       lang: lang === "it" ? "en" : "it",

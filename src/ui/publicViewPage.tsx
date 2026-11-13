@@ -15,9 +15,9 @@ const STYLE = `
   .foot { color: var(--muted); font-size: .85rem; margin-top: 1.5rem; }
 `;
 
-export function PublicNotFoundPage({ origin }: { origin: string }) {
+export function PublicNotFoundPage({ origin, repoUrl }: { origin: string; repoUrl?: string }) {
   return (
-    <PageShell title="Not found — SplitViewer" hideNav>
+    <PageShell title="Not found — SplitViewer" hideNav repoUrl={repoUrl}>
       <div class="card">
         <h1 style="margin-top: 0;">Not found</h1>
         <p>This dashboard doesn't exist or has been revoked by its owner.</p>
@@ -27,9 +27,9 @@ export function PublicNotFoundPage({ origin }: { origin: string }) {
   );
 }
 
-export function PublicUnavailablePage() {
+export function PublicUnavailablePage({ repoUrl }: { repoUrl?: string }) {
   return (
-    <PageShell title="Snapshot unavailable — SplitViewer" hideNav>
+    <PageShell title="Snapshot unavailable — SplitViewer" hideNav repoUrl={repoUrl}>
       <div class="card">
         <h1 style="margin-top: 0;">Snapshot unavailable</h1>
         <p>We couldn't refresh this dashboard right now. Try again soon.</p>
@@ -38,7 +38,7 @@ export function PublicUnavailablePage() {
   );
 }
 
-export function PublicDashboard({ snapshot, asOfSeconds, slug, origin }: { snapshot: SanitizedSnapshot; asOfSeconds: number | null; slug: string; origin: string }) {
+export function PublicDashboard({ snapshot, asOfSeconds, slug, origin, repoUrl }: { snapshot: SanitizedSnapshot; asOfSeconds: number | null; slug: string; origin: string; repoUrl?: string }) {
   const ogDescription =
     snapshot.currencies.length === 0
       ? "No open debts — everyone is settled up."
@@ -49,6 +49,7 @@ export function PublicDashboard({ snapshot, asOfSeconds, slug, origin }: { snaps
     <PageShell
       title={`SplitViewer — ${snapshot.name}`}
       description={ogDescription}
+      repoUrl={repoUrl}
       head={
         <>
           <meta property="og:title" content={snapshot.name} />

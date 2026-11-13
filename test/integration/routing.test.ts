@@ -44,6 +44,18 @@ describe("src/index.tsx", () => {
 		expect(text).toContain("github.com/panz3r/splitviewer/issues");
 	});
 
+	it("report links follow the REPO_URL var (self-hosted forks report to their own tracker)", async () => {
+		const request = new IncomingRequest("http://example.com/support");
+		const ctx = createExecutionContext();
+		const forkEnv = { ...env, REPO_URL: "https://github.com/acme/splitviewer" };
+		const response = await worker.fetch(request, forkEnv, ctx);
+		await waitOnExecutionContext(ctx);
+		const text = await response.text();
+		expect(text).toContain("https://github.com/acme/splitviewer/issues/new?template=report.yml");
+		expect(text).toContain("https://github.com/acme/splitviewer/issues");
+		expect(text).not.toContain("github.com/panz3r/splitviewer");
+	});
+
 	it("GET /example-card.png returns a PNG with no-store (random per request)", async () => {
 		const req = () => {
 			const r = new IncomingRequest("http://example.com/example-card.png");
@@ -67,7 +79,7 @@ describe("src/index.tsx", () => {
 		expect(differs).toBe(true);
 		expect(aBytes.length).toBeGreaterThan(10_000);
 		expect(bBytes.length).toBeGreaterThan(10_000);
-	});
+	}, 15_000); // two OG renders; the 5s default flakes under load
 
 	it("GET /it renders the Italian homepage", async () => {
 		const request = new IncomingRequest("http://example.com/it");

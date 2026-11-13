@@ -5,6 +5,7 @@ import { Hono } from "hono";
 import { getSessionUserId } from "../middleware/session";
 import { PageShell } from "../ui/components";
 import { homePage } from "../ui/homePage";
+import { repoUrl } from "../wiring";
 import type { AppEnv } from "../types";
 
 export const homeRoutes = new Hono<AppEnv>()
@@ -15,7 +16,7 @@ export const homeRoutes = new Hono<AppEnv>()
       // Authenticated users should never see the landing page again.
       return c.redirect("/dashboard", 302);
     }
-    return c.html(<PageShell {...homePage({ lang: "en", origin: new URL(c.req.url).origin })} />);
+    return c.html(<PageShell {...homePage({ lang: "en", origin: new URL(c.req.url).origin, repoUrl: repoUrl(c.env) })} />);
   })
 
   .get("/it", async (c) => {
@@ -25,5 +26,5 @@ export const homeRoutes = new Hono<AppEnv>()
       // dashboard (logo click from /it/dashboard must round-trip).
       return c.redirect("/it/dashboard", 302);
     }
-    return c.html(<PageShell {...homePage({ lang: "it", origin: new URL(c.req.url).origin })} />);
+    return c.html(<PageShell {...homePage({ lang: "it", origin: new URL(c.req.url).origin, repoUrl: repoUrl(c.env) })} />);
   });

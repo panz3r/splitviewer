@@ -4,12 +4,13 @@ import type { FC } from "hono/jsx";
 import { raw } from "hono/html";
 import { APP_STYLE } from "./styles";
 import { getDict, type Lang } from "../i18n";
+import { DEFAULT_REPO_URL, repoLinks } from "../lib/links";
 
-/** Single URL constant; flip here if the repo moves. */
-export const REPO_URL = "https://github.com/panz3r/splitviewer";
-export const REPO_ISSUES_URL = `${REPO_URL}/issues`;
-/** New-issue form with the guided report template (takedowns, bugs, privacy). */
-export const REPO_REPORT_URL = `${REPO_URL}/issues/new?template=report.yml`;
+export { DEFAULT_REPO_URL };
+
+/** PageShell footer links come from the configured repo (REPO_URL wrangler var). */
+export { repoLinks } from "../lib/links";
+export type { RepoLinks } from "../lib/links";
 
 export interface PageShellProps {
   title: string;
@@ -22,6 +23,8 @@ export interface PageShellProps {
   langToggle?: { href: string; lang: Lang };
   /** hreflang alternates for SEO (absolute URLs). x-default → EN is added automatically. */
   hreflang?: Array<{ lang: Lang; href: string }>;
+  /** Repo root for footer links (defaults to the upstream repo). */
+  repoUrl?: string;
   /**
    * Session widget for the header (avatar + first name + Log-out menu, native
    * <details> popup so it works without JS).
@@ -39,6 +42,7 @@ export const PageShell: FC<PageShellProps> = (props) => {
     lang = "en",
     langToggle,
     hreflang,
+    repoUrl,
     user,
     children,
     hideNav,
@@ -153,7 +157,7 @@ export const PageShell: FC<PageShellProps> = (props) => {
               <span>{t.footer.notAffiliated}</span>
               <span class="navlinks">
                 <a href={lang === "it" ? "/it/support" : "/support"}>{t.nav.support}</a>
-                <a href={REPO_REPORT_URL} target="_blank" rel="noopener">
+                <a href={repoLinks(repoUrl).report} target="_blank" rel="noopener">
                   {t.nav.reportIssue}
                 </a>
               </span>
