@@ -1,0 +1,76 @@
+name: Release prep
+
+# The blessed release path: bumps package.json BEFORE the tag exists, so the
+# tag's tree always carries its own version. Manual `git tag vX && git push`
+# still works — release.yml syncs package.json after deploy in that case.
+#
+# NOTE: a tag pushed with GITHUB_TOKEN does NOT trigger release.yml's
+# `on: push: tags` (GitHub blocks GITHUB_TOKEN-triggered push events), so this
+# workflow explicitly dispatches release.yml on the tag ref — workflow_dispatch
+# is one of the allowed GITHUB_TOKEN exceptions.
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to release, WITHOUT the v prefix (e.g. 0.2.5)"
+        required: true
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  bump-and-tag:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate version input
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          if ! echo "$VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "::error::version must be plain semver without the v prefix, e.g. 0.2.5 (got: '$VERSION')"
+            exit 1
+          fi
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+          echo "TAG=v$VERSION" >> "$GITHUB_ENV"
+
+      - name: Refuse an already-existing tag
+        run: |
+          if git ls-remote --tags origin "refs/tags/${TAG}" | grep -q "refs/tags/${TAG}"; then
+            echo "::error::tag ${TAG} already exists"
+            exit 1
+          fi
+
+      - name: Bump package.json version
+        run: |
+          node -e "
+            const fs = require('fs');
+            const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+            pkg.version = process.env.VERSION;
+            fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
+            console.log('package.json version ->', process.env.VERSION);
+          "
+
+      - name: Commit the bump to main
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package.json
+          git commit -m "chore(release): ${TAG}"
+          git push origin HEAD:main
+
+      - name: Create and push the tag
+        run: |
+          git tag "${TAG}"
+          git push origin "${TAG}"
+
+      - name: Trigger the release pipeline on the tag
+        run: gh workflow run release.yml --ref "${TAG}"
+        env:
+          GH_TOKEN: ${{ github.token }}

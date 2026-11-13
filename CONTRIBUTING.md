@@ -126,11 +126,20 @@ repositories/clients via parameters. Presentation never calls services.
   The worker's secrets (`TOKEN_ENCRYPTION_KEY`, `SESSION_SECRET`,
   `SPLITWISE_CLIENT_SECRET`) are **not** touched by deploys — set them once with
   `wrangler secret put` (see README).
-- To cut a release: `git tag vX.Y.Z && git push origin vX.Y.Z` — CI checks, deploys
-  to prod, records the deployment, and publishes the GitHub Release. Optional:
-  protect the `prod` environment (Settings → Environments → required reviewers)
+- To cut a release: run **Release prep** (Actions → Release prep → Run workflow,
+  version without the `v` prefix) — it bumps `package.json`, commits, tags, and
+  triggers the release pipeline. Manual `git tag vX.Y.Z && git push origin vX.Y.Z`
+  also works: the release workflow then syncs `package.json` after deploying.
+  Optional: protect the `prod` environment (Settings → Environments → required reviewers)
   for a manual approval gate. `npm run deploy`
   stays available for manual deploys from a configured checkout.
+- Dependencies are kept current by **Dependabot** (`.github/dependabot.yml`,
+  weekly): npm minor+patch arrive grouped in one PR, majors and
+  GitHub-Actions bumps individually — every PR is validated by CI. Watch the
+  coupled pair `wrangler` + `@cloudflare/vitest-plugin` and the wasm modules
+  (`@cf-wasm/*`) on major bumps.
+- `package.json` has `"private": true` — SplitViewer is an app, not a published
+  npm package; the flag prevents accidental publishes.
 
 ## Reporting bugs / security
 
