@@ -139,7 +139,10 @@ repositories/clients via parameters. Presentation never calls services.
   coupled pair `wrangler` + `@cloudflare/vitest-plugin` and the wasm modules
   (`@cf-wasm/*`) on major bumps. Dependabot PRs are **auto-merged with squash**
   once CI is green (`fastify/github-action-merge-dependabot`, target `minor` —
-  majors always need manual review).
+  majors always need manual review). This requires the repo setting
+  **Settings → Actions → General → "Allow GitHub Actions to create and approve
+  pull requests"** to stay on (the action approves before merging; GITHUB_TOKEN
+  is blocked from approving PRs otherwise).
 - `package.json` has `"private": true` — SplitViewer is an app, not a published
   npm package; the flag prevents accidental publishes.
 
