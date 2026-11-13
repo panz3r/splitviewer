@@ -105,7 +105,12 @@ export const auth = new Hono<AppEnv>()
       );
     } catch (error) {
       if (error instanceof SplitwiseAuthError) {
-        // Deliberately terse: never echo Splitwise response bodies to the client.
+        // Server-side visibility for ops: status + generic message only —
+        // never the response body or any credential material. The client
+        // stays deliberately terse ("Splitwise authorization failed.").
+        console.error(
+          `oauth token exchange failed: status ${error.status}`,
+        );
         return c.text("Splitwise authorization failed.", 400);
       }
       throw error;
