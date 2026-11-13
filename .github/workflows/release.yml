@@ -15,9 +15,9 @@ jobs:
   checks:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7.0.1
 
-      - uses: actions/setup-node@v7
+      - uses: actions/setup-node@v7.1.0
         with:
           node-version: 24
           cache: npm
@@ -46,9 +46,9 @@ jobs:
     # can carry protection rules (required reviewers, wait timers).
     environment: prod
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7.0.1
 
-      - uses: actions/setup-node@v7
+      - uses: actions/setup-node@v7.1.0
         with:
           node-version: 24
           cache: npm
@@ -79,7 +79,7 @@ jobs:
       # tied to the tag) and flip its status after the deploy finishes.
       - name: Create prod deployment record
         id: deployment
-        uses: actions/github-script@v9
+        uses: actions/github-script@v9.0.0
         with:
           script: |
             const { data } = await github.rest.repos.createDeployment({
@@ -108,7 +108,7 @@ jobs:
 
       - name: Mark prod deployment successful
         if: success()
-        uses: actions/github-script@v9
+        uses: actions/github-script@v9.0.0
         with:
           script: |
             await github.rest.repos.createDeploymentStatus({
@@ -122,7 +122,7 @@ jobs:
 
       - name: Mark prod deployment failed
         if: failure()
-        uses: actions/github-script@v9
+        uses: actions/github-script@v9.0.0
         with:
           script: |
             await github.rest.repos.createDeploymentStatus({
