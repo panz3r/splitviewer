@@ -78,9 +78,12 @@ describe("cache helpers", () => {
     expect(row?.snapshot).toEqual(snapshot);
     expect(row?.lastFetchedAt).toBe(now);
 
-    expect(isFresh(now)).toBe(true);
-    expect(isFresh(now - FRESH_WINDOW_SECONDS)).toBe(false);
-    expect(isFresh(now - FRESH_WINDOW_SECONDS + 1)).toBe(true); // boundary excluded
+    // All freshness assertions pin the clock (`nowSeconds`) — relying on the
+    // default wall clock flakes when a second boundary ticks between `now`
+    // and the boundary case below.
+    expect(isFresh(now, now)).toBe(true);
+    expect(isFresh(now - FRESH_WINDOW_SECONDS, now)).toBe(false);
+    expect(isFresh(now - FRESH_WINDOW_SECONDS + 1, now)).toBe(true); // boundary excluded
 
     await deleteCache(env, slug);
     expect(await getCache(env, slug)).toBeNull();
