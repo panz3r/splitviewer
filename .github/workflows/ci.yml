@@ -45,3 +45,19 @@ jobs:
 
       - name: Tests (vitest + Cloudflare Workers pool)
         run: npm test
+
+  # Auto-merge Dependabot PRs once the full check suite above is green.
+  # Minor + patch bumps merge automatically; majors stay for manual review.
+  automerge:
+    needs: checks
+    if: github.actor == 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # merge the PR
+      pull-requests: write # comment/approve on the PR
+    steps:
+      - uses: fastify/github-action-merge-dependabot@v3.15.0
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          merge-method: squash # the repo only allows squash merges
+          target: minor # covers minor and patch; majors are skipped here
