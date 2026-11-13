@@ -5,6 +5,7 @@ import { raw } from "hono/html";
 import { APP_STYLE } from "./styles";
 import { getDict, type Lang } from "../i18n";
 import { DEFAULT_REPO_URL, repoLinks } from "../lib/links";
+import { LogoIcon } from "./icon";
 
 export { DEFAULT_REPO_URL };
 
@@ -62,6 +63,8 @@ export const PageShell: FC<PageShellProps> = (props) => {
         <meta name="description" content={description} />
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
         <meta name="color-scheme" content="light dark" />
+        <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
         {/* Splitwise's own type stack (their attributions): Montserrat display, Lato body */}
@@ -90,9 +93,7 @@ export const PageShell: FC<PageShellProps> = (props) => {
             <header class="topbar">
               <div class="container">
                 <a class="logo" href={logoHref}>
-                  <span class="leaf" aria-hidden="true">
-                    ⇄
-                  </span>
+                  <LogoIcon />
                   SplitViewer
                 </a>
                 <div class="navlinks">

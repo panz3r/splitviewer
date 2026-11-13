@@ -70,7 +70,8 @@ const HEADER_FOOTER = `
   .topbar .container { display: flex; align-items: center; justify-content: space-between; height: 3.4rem; }
   .logo { font-weight: 800; font-size: 1.15rem; text-decoration: none; color: var(--ink);
           display: flex; align-items: center; gap: .45rem; }
-  .logo .leaf { color: var(--green); }
+  .logo-icon { display: block; width: 1.75rem; height: 1.75rem; flex: none;
+               border-radius: .4rem; }
   .navlinks { display: flex; gap: 1.1rem; align-items: center; }
   .navlinks a { color: var(--muted); text-decoration: none; font-size: .95rem; }
   .navlinks a:hover { color: var(--green-dark); }
