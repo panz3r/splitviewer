@@ -26,7 +26,7 @@
   "license": "LGPL-3.0-only",
   "private": true,
   "engines": {
-    "node": ">=20.19.0"
+    "node": ">=22.12.0"
   },
   "scripts": {
     "dev": "wrangler dev",
@@ -48,7 +48,7 @@
     "@types/node": "^26.6.6",
     "@types/react": "^19.3.0",
     "typescript": "^7.0.2",
-    "vitest": "^4.1.12",
+    "vitest": "^5.1.0",
     "wrangler": "^4.110.0"
   }
 }

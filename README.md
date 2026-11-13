@@ -11,7 +11,7 @@ on the in-app pages at [`/support`](https://splitviewer.mattiapanzeri.workers.de
 
 ## Quickstart (local dev, ~5 minutes)
 
-Prerequisites: Node 20.19+ (24 recommended) and npm.
+Prerequisites: Node 22.12+ (24 recommended) and npm.
 
 ```bash
 git clone https://github.com/panz3r/splitviewer && cd splitviewer
