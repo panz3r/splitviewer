@@ -137,7 +137,9 @@ repositories/clients via parameters. Presentation never calls services.
   weekly): npm minor+patch arrive grouped in one PR, majors and
   GitHub-Actions bumps individually — every PR is validated by CI. Watch the
   coupled pair `wrangler` + `@cloudflare/vitest-plugin` and the wasm modules
-  (`@cf-wasm/*`) on major bumps.
+  (`@cf-wasm/*`) on major bumps. Dependabot PRs are **auto-merged with squash**
+  once CI is green (`fastify/github-action-merge-dependabot`, target `minor` —
+  majors always need manual review).
 - `package.json` has `"private": true` — SplitViewer is an app, not a published
   npm package; the flag prevents accidental publishes.
 
