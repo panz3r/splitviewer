@@ -68,10 +68,15 @@ repositories/clients via parameters. Presentation never calls services.
   uses `wrangler secret put`. `wrangler.jsonc` is gitignored too — it carries your
   `database_id` + PROD client id; `wrangler.example.jsonc` is the template. Outbound
   failure logs stay terse — never log tokens, cookies, or OAuth payloads.
-- **Behavior contracts live in `plans/refactor-mvc.md`** (privacy wall, multi-currency,
-  instant revocation, stale-while-revalidate, cookie `Secure` on http://localhost,
-  Hono registration order, EU jurisdiction). Changing one of those requires a test
-  that pins it.
+- **Behavior contracts (privacy wall, multi-currency, secrets-at-rest, stale-while-revalidate
+  caching, instant revocation, crawler-friendly OG output, cookie `Secure` semantics,
+  Hono registration order, EU jurisdiction) are non-negotiable; changing one of them
+  requires a test that pins it.** The full list lives in this document (ground rules
+  below) and `docs/architecture.md`; the agent-facing copy is in `AGENTS.md`. In short:
+  cache serves fresh (< ~7 min) then stale on failure; revocation makes `/p/:slug`
+  and its OG image 404 immediately (and drops the cache row); OG meta tags render on
+  bare GET (no JS) and `/p/:slug/og.png` returns a 1200×630 PNG — verify with
+  `curl -A "Twitterbot/1.0"`.
 - **Tests by layer.** New service logic gets a *unit* test against the in-memory
   fakes (`test/fakes/`); HTTP behavior gets an *integration* test through the worker
   (`test/integration/`); D1/crypto guarantees stay in `test/infra/`.

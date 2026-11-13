@@ -1,38 +1,86 @@
 # SplitViewer — agent notes
 
-## Status
+Guidance for coding agents working in this repo. The committed docs below are the
+source of truth for setup and workflow; this file adds only what they don't cover
+(gotchas, hard rules, where things live). No history or status logs here — the git
+log is the changelog.
 
-- **Release pipeline live (2026-11-12)**: `.github/workflows/ci.yml` runs typechecks + 111 tests on PRs/main (no secrets — seeds config via `setup-local.sh --yes`); `.github/workflows/release.yml` deploys on tag `v*` after checks, rebuilding `wrangler.jsonc` from repo secrets (`CLOUDFLARE_API_TOKEN`, `D1_DATABASE_ID`, `SPLITWISE_CLIENT_ID`; optional `CLOUDFLARE_ACCOUNT_ID`), publishes a **GitHub Release** with generated notes, and records a **`prod` GitHub deployment** (Deployments view; `v0.2.0` + `v0.2.1` verified). Manual `npm run deploy` still works from a configured checkout. Repo-local Chromium for DevTools MCP: `npm run chromium:install` / `chromium:launch` (persistent profile in `./.chromium-profile`; Splitwise login persists). Repo only allows **squash** PR merges.
-- **MVC refactor shipped on `main` (2026-11-12, deployed `3406c95a`)**: strict layering — `src/controllers/` (thin Hono routers, zero JSX/SQL/lang logic), `src/domain/` (services, framework-agnostic, deps-injected), `src/repositories/` (interface + D1 + InMemory per repo), `src/ui/*Page.tsx` (props-in JSX-out), `src/middleware/{session,i18n}.ts`, `src/wiring.ts` (composition root: env→repos→services), `src/app.ts` (`createApp()`; `index.tsx` delegates). Tests by layer: `test/unit|integration|infra/` + `test/fakes/` (in-memory repos + FakeSplitwiseClient); 111 tests (82 preserved + 29 new). Self-host: `npm run setup-local`, `.dev.vars.example`, `wrangler.example.jsonc`, `docs/architecture.md`. **Repo links are deploy-time config**: in-app report/project links resolve from the `REPO_URL` wrangler var (`src/lib/links.ts`, default = upstream repo); `setup-local.sh` seeds it from `git remote`, and the release workflow injects `github.server_url/github.repository` so forks report to their own tracker (only *adding* vars needs `npm run cf-typegen`). Plan: `plans/refactor-mvc.md`. **Fixed latent i18n-v1 bug on the way**: dashboard flash params (`?msg=created`) now resolve via explicit param→dict-key maps in `domain/flashService` (the old `msg in t.dash` check never matched `flash*` keys, so flashes never rendered) — **live-verified in the user's browser** both directions (created→recreated links then revoked to restore state).
-- Hard-won gotchas (see per-phase notes in `plans/` for full context): cookies derive `Secure` from the request protocol (Safari refuses it on http://localhost); sign sessions with the stored row id — always use `upsertUser()` (`src/lib/users.ts`, wrapping `repositories/usersRepo.ts`); OG rendering requires `cache.setExecutionContext()` first (`src/controllers/og.tsx`); **hono/jsx escapes string children** — inline `<script>`/`<style>` content MUST go through `dangerouslySetInnerHTML`/unquoted CSS (`src/ui/dashboardPage.tsx`, unquoted font stacks in `src/ui/styles.ts`); DOCTYPE is not automatic (`raw()` in PageShell); Hono middleware/composition is registration-ordered. **App icon**: `src/ui/icon.tsx` must be kept in sync with `assets/icon.svg` (design source); after artwork changes run `node scripts/generate-icons.mjs` (regenerates the committed apple-touch PNG via `@cf-wasm/resvg`, already in the tree); favicon routes live in `src/controllers/assets.tsx`. **Test gotcha**: never rely on the default wall clock in freshness/boundary assertions — pin `nowSeconds` (CI flaked on a second-boundary tick once).
-- `plans/Splitwise Public Dashboards Implementation Plan.md` is the source of truth for architecture, phases, and scope. Per-phase execution records live in `plans/` (gitignored, not committed). **Translations live in `src/i18n/{en,it}.json`** (not code); the `Dict` type in `src/i18n/index.ts` is derived from `en.json` so key parity is compile-enforced; `test/i18n.test.ts` adds runtime parity checks with translator-friendly messages.
-- Stack as built: Cloudflare Workers + Hono SSR, Cloudflare D1 (EU jurisdiction), `@cf-wasm/og` for OG images, AES-256-GCM via Web Crypto, vitest workers integration (111 tests across unit/integration/infra layers).
+## Where to look (committed docs)
 
-## Non-obvious product constraints
+- **`CONTRIBUTING.md`** — local setup, code layout, ground rules + behavior
+  contracts, CI/release/Dependabot pipeline, troubleshooting.
+- **`docs/architecture.md`** — one-page MVC layer map, dependency direction, key
+  DTOs, invariants.
+- **`README.md`** — product overview, quickstart, self-hosting walkthrough,
+  privacy model, license (LGPL-3.0-only).
+- **`SUPPORT.md`** — user support, FAQ, report/takedown flow.
+- **`.github/workflows/`** — `ci.yml` (typecheck + tests on PRs/main, Dependabot
+  auto-merge), `release-prep.yml` (version bump → tag → pipeline), `release.yml`
+  (checks → Cloudflare deploy → GitHub Release → `prod` deployment record),
+  `verify-lockfile.yml` (GitHub Actions are SHA-locked; run `gh actions-lock`
+  after adding/changing an action).
 
-These are verbatim requirements from the plan, easy to miss while coding:
+## Stack
 
-- **Privacy is the core feature**: the public view (`/p/:slug`) must show only First Name + Last Initial (e.g. "Marco D."). Never expose emails, avatars, full surnames, or itemized receipt data anywhere, including JSON payloads.
-- **Multi-currency**: group `simplified_debts` by `currency_code` — separate cards per currency, never blend/convert amounts.
-- **Splitwise OAuth tokens are secrets at rest**: encrypt before storing in D1; the 32-byte hex key lives in the `TOKEN_ENCRYPTION_KEY` wrangler secret, never in code or config files.
-- **Caching is stale-while-revalidate**: serve D1 `group_cache` if fresh (< ~7 min); refresh via `executionCtx.waitUntil()`; fall back to stale cache if the Splitwise API call fails.
-- **Revocation must be instant**: deactivating a share means `/p/:slug` and `/p/:slug/og.png` return 404 immediately, not after cache expiry.
-- **Crawlers matter**: OG meta tags must render on bare GET (no JS), and `/p/:slug/og.png` returns a 1200×630 PNG. Verify with `curl -A "Twitterbot/1.0"`.
+Cloudflare Workers + Hono (SSR JSX, no client JS on public pages), Cloudflare D1
+(EU jurisdiction), `@cf-wasm/og` for OG images, AES-256-GCM via Web Crypto,
+vitest with the Cloudflare workers plugin. Tests live by layer in
+`test/unit|integration|infra/` with in-memory fakes in `test/fakes/`.
 
-## Cloudflare compliance: EU jurisdiction only (user requirement)
+## Hard rules (details in CONTRIBUTING.md)
 
-- **Every Cloudflare resource must be created/recreated with `jurisdiction: eu`.** Verified command surface (wrangler 4.158): D1 `wrangler d1 create <name> --jurisdiction eu`; KV `wrangler kv namespace create <name> --jurisdiction eu` (and add `"jurisdiction": "eu"` to its wrangler.jsonc binding for local dev); R2 `wrangler r2 bucket create <name> -J eu`. If `--jurisdiction` is set, `--location` hints are ignored.
-- The prod D1 was recreated on 2026-11-09 with `jurisdiction: eu` (`d1 info` confirms `jurisdiction │ eu`).
-- Workers themselves run on the global edge (no per-Worker jurisdiction flag). If EU-only request processing is ever required, revisit Cloudflare's jurisdiction options then — don't assume "EU D1" constrains worker placement.
-- Before creating any new Cloudflare resource, check `--jurisdiction` exists for that resource type in `--help`; if it doesn't support jurisdiction, flag it before creating.
+1. **Privacy wall**: `/p/:slug` renders first name + last initial only. Never
+   expose emails, avatars, full surnames, member ids, or itemized data anywhere,
+   including JSON payloads and cached snapshots (`src/domain/sanitizeService.ts`
+   is the only sanctioned source of public content).
+2. **Multi-currency**: debts are grouped by `currency_code` — separate blocks per
+   currency, never blended or converted.
+3. **EU jurisdiction**: every Cloudflare resource is created with
+   `--jurisdiction eu` (`d1 create`, `kv namespace create`, `r2 bucket create -J`).
+   Workers themselves run on the global edge — that is not a violation. If a
+   resource type has no `--jurisdiction` flag, flag it before creating anything.
+4. **Secrets**: `TOKEN_ENCRYPTION_KEY`, `SESSION_SECRET`,
+   `SPLITWISE_CLIENT_SECRET` are wrangler secrets (`.dev.vars` locally), never in
+   code, config, or logs. In-app repo links come from the `REPO_URL` wrangler var
+   (`src/lib/links.ts`).
+5. **Tests by layer**: service logic → `test/unit/` against the in-memory fakes;
+   HTTP behavior → `test/integration/` through the worker; D1/crypto guarantees →
+   `test/infra/`. New code without a layer-appropriate test is incomplete.
+6. **i18n**: copy lives only in `src/i18n/{en,it}.json`; the `Dict` type is
+   derived from `en.json` (compile-enforced key parity) with runtime parity
+   checks in `test/i18n.test.ts`.
 
-## Setup
+## Gotchas
 
-- Scaffold source: `npm create hono@latest -- --template cloudflare-workers` (C3's `--framework=hono` path ignores its flags as of v2.74.9 — don't bother with it).
-- `wrangler.jsonc` has D1 binding `DB` → database `splitviewer` (`database_id` filled, DB created). Existing prod secret: `TOKEN_ENCRYPTION_KEY` (fresh key, differs from local `.dev.vars`).
-- Dev/prod use **two separate Splitwise apps** (Splitwise allows one callback URL per app): dev callback `http://localhost:8787/auth/callback`, prod callback `https://splitviewer.mattiapanzeri.workers.dev/auth/callback`. Prod `SPLITWISE_CLIENT_ID` is a wrangler.jsonc var (placeholder committed); `SPLITWISE_CLIENT_SECRET` + `SESSION_SECRET` are secrets (`wrangler secret put` for prod, `.dev.vars` for local).
-- hono/jwt gotchas: `verify(token, secret, "HS256")` (3rd arg required); payload types need a string index signature (`src/lib/jwt-types.ts`); `verify` throws on bad sig/expiry — the state/session helpers already turn that into `null`.
-- Deployed worker: https://splitviewer.mattiapanzeri.workers.dev (`npx wrangler deploy` to ship; run `npx wrangler d1 migrations apply DB --remote` after any new migration; local counterpart `--local` — **local D1 state is keyed by `database_id`**, so recreating a database — even with the same name — orphans locally-applied migrations until they're re-applied; bit us during the first real OAuth login).
-- After any `wrangler.jsonc` change (vars/bindings), re-run `npm run cf-typegen`.
-- Local dev secrets live in `.dev.vars` (gitignored): 64-hex-char `TOKEN_ENCRYPTION_KEY`.
-- Tests: vitest + `@cloudflare/vitest-plugin` (Cloudflare's new name; `@cloudflare/vitest-pool-workers` is legacy). Migrations auto-applied in tests via a `TEST_MIGRATIONS` binding. Follow the phase order — OAuth (Phase 2) depends on the crypto module (`src/lib/crypto.ts`) and D1 schema (`migrations/0001_init_schema.sql`) from Phase 1.
+- **hono/jsx escapes string children**: inline `<script>`/`<style>` content MUST
+  go through `dangerouslySetInnerHTML` / unquoted CSS (`src/ui/dashboardPage.tsx`,
+  `src/ui/styles.ts`).
+- **DOCTYPE is not automatic**: PageShell emits it via `raw()`.
+- **Hono composition is registration-ordered**: middleware (i18n, rate limits,
+  sessions) must be registered before the routes that depend on them
+  (`src/app.ts`).
+- **hono/jwt**: `verify(token, secret, "HS256")` — the third argument is
+  required; payload types need a string index signature (`src/lib/jwt-types.ts`);
+  `verify` throws on bad signature/expiry, and the session helpers turn that
+  into `null`.
+- **Sign sessions with the stored row id**: always create/login users through
+  `UsersRepo.upsert` (`src/repositories/usersRepo.ts`) — a freshly generated
+  UUID would create sessions pointing at a nonexistent user.
+- **OG rendering** (`src/controllers/og.tsx`, `exampleCard.tsx`) requires
+  `cache.setExecutionContext()` before the first render or it crashes.
+- **App icon**: `src/ui/icon.tsx` must stay in sync with `assets/icon.svg` (the
+  design source). After artwork changes run `node scripts/generate-icons.mjs`
+  (regenerates the committed apple-touch PNG via `@cf-wasm/resvg`, already in
+  the dependency tree). Favicon routes: `src/controllers/assets.tsx`.
+- **Tests**: pin clocks explicitly in freshness/boundary assertions — never rely
+  on the default wall clock. Never run two `npm test` instances at once (shared
+  `.wrangler` state causes phantom failures). Migrations are auto-applied in
+  tests via the `TEST_MIGRATIONS` binding.
+- **Cookies**: `Secure` derives from the request protocol (Safari refuses Secure
+  cookies on `http://localhost`).
+- **Local D1 state is keyed by `database_id`**: recreating the database — even
+  with the same name — orphans local migrations until
+  `npx wrangler d1 migrations apply DB --local` is re-run.
+- **wrangler.jsonc**: adding a var/binding requires `npm run cf-typegen`
+  (changing a value doesn't). The file is gitignored; `wrangler.example.jsonc`
+  is the template.
