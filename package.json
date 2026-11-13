@@ -1,6 +1,32 @@
 {
   "name": "splitviewer",
+  "version": "0.2.4",
   "type": "module",
+  "description": "Shareable, privacy-first public dashboards for Splitwise groups. First names only, EU-hosted, revocable in one click.",
+  "keywords": [
+    "splitwise",
+    "dashboard",
+    "privacy",
+    "cloudflare-workers",
+    "hono",
+    "og-image"
+  ],
+  "homepage": "https://splitviewer.mattiapanzeri.workers.dev",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/panz3r/splitviewer.git"
+  },
+  "bugs": {
+    "url": "https://github.com/panz3r/splitviewer/issues/new?template=report.yml"
+  },
+  "author": {
+    "name": "Mattia Panzeri",
+    "url": "https://github.com/panz3r"
+  },
+  "license": "LGPL-3.0-only",
+  "engines": {
+    "node": ">=20.19.0"
+  },
   "scripts": {
     "dev": "wrangler dev",
     "setup-local": "bash scripts/setup-local.sh",

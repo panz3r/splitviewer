@@ -11,7 +11,7 @@ on the in-app pages at [`/support`](https://splitviewer.mattiapanzeri.workers.de
 
 ## Quickstart (local dev, ~5 minutes)
 
-Prerequisites: Node 18+ (24 recommended) and npm.
+Prerequisites: Node 20.19+ (24 recommended) and npm.
 
 ```bash
 git clone https://github.com/panz3r/splitviewer && cd splitviewer
@@ -94,7 +94,9 @@ controllers/ → domain/ (services) → repositories/ (D1) → presentation ui/
 
 ## License
 
-GNU GPL v3 — see [LICENSE](LICENSE).
+SplitViewer is free software: you can redistribute it and/or modify it under the
+terms of the **GNU Lesser General Public License (LGPL) version 3** — see
+[LICENSE](LICENSE).
 
 ## Support
 
