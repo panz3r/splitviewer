@@ -108,9 +108,7 @@ export const auth = new Hono<AppEnv>()
         // Server-side visibility for ops: status + generic message only —
         // never the response body or any credential material. The client
         // stays deliberately terse ("Splitwise authorization failed.").
-        console.error(
-          `oauth token exchange failed: status ${error.status}`,
-        );
+        console.error("oauth token exchange failed:", error.message);
         return c.text("Splitwise authorization failed.", 400);
       }
       throw error;

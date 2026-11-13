@@ -78,8 +78,21 @@ export async function exchangeCodeForToken(
     body: body.toString(),
   });
   if (!res.ok) {
+    // Server-side diagnosability: failed token exchanges carry only
+    // { error, error_description } (no tokens — those travel in the request).
+    // Whitelist exactly those fields onto the error; never log the body raw.
+    let detail = "";
+    try {
+      const body = (await res.json()) as { error?: unknown; error_description?: unknown };
+      if (typeof body.error === "string") detail = body.error;
+      if (typeof body.error_description === "string") {
+        detail += ` — ${body.error_description.slice(0, 200)}`;
+      }
+    } catch {
+      // non-JSON body: nothing safe to log
+    }
     throw new SplitwiseAuthError(
-      `Splitwise token exchange failed with status ${res.status}`,
+      `Splitwise token exchange failed with status ${res.status}${detail ? ` (${detail})` : ""}`,
       res.status,
     );
   }
