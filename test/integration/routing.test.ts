@@ -56,8 +56,57 @@ describe("src/index.tsx", () => {
 		expect(text).not.toContain("github.com/panz3r/splitviewer");
 	});
 
-	it("GET /example-card.png returns a PNG with no-store (random per request)", async () => {
-		const req = () => {
+	describe("icon assets", () => {
+		it("GET /icon.svg serves the favicon SVG", async () => {
+			const request = new IncomingRequest("http://example.com/icon.svg");
+			const ctx = createExecutionContext();
+			const response = await worker.fetch(request, env, ctx);
+			await waitOnExecutionContext(ctx);
+			expect(response.status).toBe(200);
+			expect(response.headers.get("Content-Type")).toBe("image/svg+xml");
+			const body = await response.text();
+			expect(body).toContain("<svg");
+			expect(body).toContain('id="icon-shape"');
+		});
+
+		it("GET /favicon.ico redirects to /icon.svg", async () => {
+			const request = new IncomingRequest("http://example.com/favicon.ico");
+			const ctx = createExecutionContext();
+			const response = await worker.fetch(request, env, ctx);
+			await waitOnExecutionContext(ctx);
+			expect(response.status).toBe(302);
+			expect(response.headers.get("Location")).toBe("/icon.svg");
+		});
+
+		it("GET /apple-touch-icon.png serves the generated 180px PNG", async () => {
+			const request = new IncomingRequest("http://example.com/apple-touch-icon.png");
+			const ctx = createExecutionContext();
+			const response = await worker.fetch(request, env, ctx);
+			await waitOnExecutionContext(ctx);
+			expect(response.status).toBe(200);
+			expect(response.headers.get("Content-Type")).toBe("image/png");
+			const bytes = new Uint8Array(await response.arrayBuffer());
+			expect(Array.from(bytes.slice(0, 8))).toEqual([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+			// full-bleed 180x180 (no rounded corners): iOS masks it itself
+			expect(bytes.length).toBeGreaterThan(1_000);
+		});
+
+		it("pages embed the favicon links and the inline logo", async () => {
+			const request = new IncomingRequest("http://example.com/");
+			const ctx = createExecutionContext();
+			const response = await worker.fetch(request, env, ctx);
+			await waitOnExecutionContext(ctx);
+			const text = await response.text();
+			expect(text).toContain('rel="icon" type="image/svg+xml" href="/icon.svg"');
+			expect(text).toContain('rel="apple-touch-icon" href="/apple-touch-icon.png"');
+			// header logo: inline SVG with the icon artwork, legacy ⇄ leaf gone
+			expect(text).toContain('class="logo-icon"');
+			expect(text).toContain('id="icon-shape"');
+			expect(text).not.toContain("class=\"leaf\"");
+		});
+	});
+
+	it("GET /example-card.png returns a PNG with no-store (random per request)", async () => {		const req = () => {
 			const r = new IncomingRequest("http://example.com/example-card.png");
 			const ctx = createExecutionContext();
 			return worker.fetch(r, env, ctx).then(async (res) => {

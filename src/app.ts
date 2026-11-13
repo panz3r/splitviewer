@@ -13,6 +13,7 @@ import {
   exampleCard,
   supportRoutes,
 } from "./controllers";
+import { assetsRoutes } from "./controllers/assets";
 import { ipRateLimit } from "./lib/ratelimit";
 import { langMiddleware } from "./middleware/i18n";
 import type { AppEnv } from "./types";
@@ -28,6 +29,7 @@ export function createApp(): Hono<AppEnv> {
   app.use("/p/*", ipRateLimit("public-page", 60));
   app.use("/p/*/og.png", ipRateLimit("og-image", 30));
 
+  app.route("/", assetsRoutes);
   app.route("/", auth);
   app.route("/", homeRoutes);
   app.route("/", shares);
