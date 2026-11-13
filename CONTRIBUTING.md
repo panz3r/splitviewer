@@ -8,7 +8,7 @@ publishing read-only, privacy-first dashboards of Splitwise group debts.
 
 ## Development setup
 
-Prerequisites: Node 20.19+ (24 recommended — what CI runs) and a Cloudflare account (the `wrangler`
+Prerequisites: Node 22.12+ (24 recommended — what CI runs) and a Cloudflare account (the `wrangler`
 CLI is a local dependency).
 
 ```bash
