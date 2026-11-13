@@ -127,9 +127,10 @@ repositories/clients via parameters. Presentation never calls services.
   `SPLITWISE_CLIENT_SECRET`) are **not** touched by deploys — set them once with
   `wrangler secret put` (see README).
 - To cut a release: run **Release prep** (Actions → Release prep → Run workflow,
-  version without the `v` prefix) — it bumps `package.json`, commits, tags, and
+  version without the `v` prefix) — it bumps `package.json` **and the lockfile's
+  version fields** (`npm install --package-lock-only`), commits, tags, and
   triggers the release pipeline. Manual `git tag vX.Y.Z && git push origin vX.Y.Z`
-  also works: the release workflow then syncs `package.json` after deploying.
+  also works: the release workflow then syncs both files after deploying.
   Optional: protect the `prod` environment (Settings → Environments → required reviewers)
   for a manual approval gate. `npm run deploy`
   stays available for manual deploys from a configured checkout.
