@@ -68,6 +68,12 @@ vitest with the Cloudflare workers plugin. Tests live by layer in
   UUID would create sessions pointing at a nonexistent user.
 - **OG rendering** (`src/controllers/og.tsx`, `exampleCard.tsx`) requires
   `cache.setExecutionContext()` before the first render or it crashes.
+- **satori advisory accepted** (GHSA-wx4j-mvgx-mqwp, fixed in satori 0.33.5 —
+  but `@cf-wasm/satori@0.4.2` hard-pins `satori@0.32.0` and is incompatible with
+  satori ≥ 0.33's harfbuzz internals; npm `overrides` break OG rendering). Risk
+  accepted because output is rasterized to PNG server-side and inputs are
+  masked labels — see the note in `src/controllers/og.tsx`. Do not try to
+  override satori again without moving off `@cf-wasm/satori`.
 - **App icon**: `src/ui/icon.tsx` must stay in sync with `assets/icon.svg` (the
   design source). After artwork changes run `node scripts/generate-icons.mjs`
   (regenerates the committed apple-touch PNG via `@cf-wasm/resvg`, already in

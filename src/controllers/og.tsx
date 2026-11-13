@@ -1,8 +1,16 @@
 // OG image card: GET /p/:slug/og.png → 1200x630 PNG.
 // Data contract identical to the public page (same gating + snapshot); the
-// rendered content comes ONLY from the sanitized snapshot (privacy note: the
-// unfixed satori SVG-escaping advisory (GHSA-wx4j-mvgx-mqwp) is acceptable
-// here because we never embed raw Splitwise data — only masked labels).
+// rendered content comes ONLY from the sanitized snapshot.
+//
+// Security note on satori (GHSA-wx4j-mvgx-mqwp / CVE-2026-94545, improper SVG
+// escaping — affects satori < 0.33.5): ACCEPTED risk, deliberately. Our
+// exposure is minimal because the satori output is rasterized server-side to
+// PNG via resvg (no SVG is ever served, resvg executes nothing) and inputs are
+// masked labels. Upstream is stuck: @cf-wasm/og@0.5.0 → @cf-wasm/satori@0.4.2
+// hard-pins satori@0.32.0, and satori ≥ 0.33 uses a new harfbuzz-shaping
+// architecture that crashes with the wrapper (npm `overrides` to 0.33.5 breaks
+// OG rendering). Tracked as Dependabot alert #1; revisit if @cf-wasm/og bumps
+// satori, or before ever serving satori SVG directly.
 /** @jsxImportSource react */
 import { Hono } from "hono";
 import { ImageResponse, cache } from "@cf-wasm/og/workerd";
