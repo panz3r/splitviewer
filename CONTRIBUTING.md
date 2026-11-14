@@ -131,6 +131,32 @@ repositories/clients via parameters. Presentation never calls services.
   The worker's secrets (`TOKEN_ENCRYPTION_KEY`, `SESSION_SECRET`,
   `SPLITWISE_CLIENT_SECRET`) are **not** touched by deploys — set them once with
   `wrangler secret put` (see README).
+
+  **Setting the repository secrets** — either in the web UI
+  (*Settings → Secrets and variables → Actions → New repository secret*) or with
+  the GitHub CLI:
+
+  ```bash
+  gh secret set CLOUDFLARE_API_TOKEN    # paste the API token
+  gh secret set D1_DATABASE_ID          # paste the database_id
+  gh secret set SPLITWISE_CLIENT_ID     # paste the PROD app's client id
+  gh secret set CLOUDFLARE_ACCOUNT_ID   # optional — only for multi-account tokens
+  ```
+
+  Also enable **Settings → Actions → General → "Allow GitHub Actions to create
+  and approve pull requests"** so Dependabot auto-merge can work (see below).
+
+  **Rotating the Splitwise OAuth app** — three coordinated places, learned the
+  hard way:
+  1. the new app's registered callback must be exactly
+     `https://<your-worker-domain>/auth/callback`;
+  2. update the `SPLITWISE_CLIENT_ID` **repository secret** above (the release
+     pipeline injects it at deploy time);
+  3. re-apply the new secret to the worker:
+     `printf '%s' 'NEW_SECRET' | npx wrangler secret put SPLITWISE_CLIENT_SECRET`
+     (never `echo` — the trailing newline becomes part of the secret and the
+     token exchange fails with `invalid_client`). Then cut a release so the new
+     client id deploys; users authorize again via the dashboard's reconnect flow.
 - To cut a release: run **Release prep** (Actions → Release prep → Run workflow,
   version without the `v` prefix) — it bumps `package.json` **and the lockfile's
   version fields** (`npm install --package-lock-only`), commits, tags, and
