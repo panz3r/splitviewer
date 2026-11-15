@@ -168,9 +168,9 @@ function parsePictureUrl(picture: unknown): string | undefined {
 
 /**
  * Group cover photo from GET /get_group/{id} (`cover_photo`). The value shape
- * has been observed both as a plain URL string and as a size object
- * ({small, medium, large}) — parse defensively, preferring the largest variant
- * (the cover is a full-bleed background, quality matters).
+ * has been observed both as a plain URL string and as a size object — the
+ * observed keys are `xxlarge`/`xlarge` (largest variants preferred: the cover
+ * is a full-bleed background, quality matters).
  */
 function parseCoverPhoto(value: unknown): string | undefined {
   if (typeof value === "string") {
@@ -178,7 +178,7 @@ function parseCoverPhoto(value: unknown): string | undefined {
   }
   if (value == null || typeof value !== "object") return undefined;
   const p = value as Record<string, unknown>;
-  for (const size of ["large", "medium", "small"]) {
+  for (const size of ["xxlarge", "xlarge", "large", "medium", "small"]) {
     if (typeof p[size] === "string" && (p[size] as string).length > 0) {
       return p[size] as string;
     }
