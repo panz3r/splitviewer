@@ -4,7 +4,7 @@ import { memberLabel, sanitizeGroup, type RawGroupInput } from "../../src/domain
 const RAW: RawGroupInput = {
   id: "999",
   name: "Flat 4B",
-  avatarUrl: "https://cdn.splitwise.com/group-cover.jpg",
+  coverUrl: "https://cdn.splitwise.com/group-cover.jpg",
   updatedAt: "2026-11-09T10:00:00Z",
   members: [
     { id: "101", firstName: "Marco", lastName: "Panzeri" },
