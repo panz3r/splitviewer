@@ -61,7 +61,7 @@ describe("sanitizeGroup", () => {
     expect(snapshot.slug).toBe("slugslug1234567");
     expect(snapshot.groupId).toBe("999");
     expect(snapshot.name).toBe("Flat 4B");
-    expect(snapshot.coverUrl).toBe(RAW.avatarUrl); // group-level asset, same class as name
+    expect(snapshot.coverUrl).toBe(RAW.coverUrl); // group-level asset, same class as name
     expect(snapshot.updatedAt).toBe(RAW.updatedAt);
   });
 
