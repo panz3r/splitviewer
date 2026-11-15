@@ -17,6 +17,11 @@ import { ImageResponse, cache } from "@cf-wasm/og/workerd";
 import { OgCard } from "../ui/og-card";
 import { resolvePublicViewForEnv } from "../wiring";
 import { D1SharesRepo } from "../repositories/sharesRepo";
+
+// TEMPORARY: snapshot fixture for the /cover-debug probe — remove before merging.
+const viewSnapshotForDebug = {
+  coverUrl: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+};
 import type { AppEnv } from "../types";
 
 export const ogImage = new Hono<AppEnv>()
@@ -33,13 +38,23 @@ export const ogImage = new Hono<AppEnv>()
       return c.text("Snapshot unavailable", 502);
     }
 
+    // Group cover → data URI pre-sized to the card canvas (embedded pixels in
+    // the PNG; the URL itself is never rendered). Any failure degrades to the
+    // plain charcoal card.
+    const coverImage = await coverToDataUri(view.snapshot.coverUrl);
+    // TEMPORARY diagnostic (remove before merging)
+    c.header("X-Cover-Debug", `len=${coverImage?.length ?? "null"} head=${(coverImage ?? "").slice(0, 30)}`);
+
     // Required by @cf-wasm/og in workerd (getExecutionContext crashes otherwise).
     cache.setExecutionContext(c.executionCtx);
 
-    const out = await ImageResponse.async(<OgCard snapshot={view.snapshot} />, {
-      width: 1200,
-      height: 630,
-    });
+    const out = await ImageResponse.async(
+      <OgCard snapshot={view.snapshot} coverImage={coverImage} />,
+      {
+        width: 1200,
+        height: 630,
+      },
+    );
 
     if (out instanceof Response) {
       out.headers.set("Content-Type", "image/png");
@@ -56,3 +71,116 @@ export const ogImage = new Hono<AppEnv>()
       },
     });
   });
+
+/**
+ * Converts a snapshot cover URL into a data URI pre-rasterized to the exact OG
+ * canvas (1200x630, cover-cropped via SVG preserveAspectRatio="slice").
+ * Pre-sizing is required: the bundled satori ignores `objectFit`/`backgroundSize`
+ * on embedded images, so the image must arrive at its final geometry.
+ * Any failure — or any non-https, non-data source — yields null and the card
+ * falls back to the plain charcoal background.
+ */
+const OG_W = 1200;
+const OG_H = 630;
+
+async function coverToDataUri(coverUrl: string | null | undefined): Promise<string | null> {
+  try {
+    if (!coverUrl) return null;
+    let bytes: Uint8Array;
+    let type: string;
+    if (coverUrl.startsWith("data:")) {
+      const match = /^data:([^;,]+)?(;base64)?,(.*)$/.exec(coverUrl);
+      if (!match || !match[2]) return null; // only base64 data URIs (our shape)
+      type = match[1] ?? "image/png";
+      bytes = base64ToBytes(match[3]);
+    } else {
+      if (!coverUrl.startsWith("https://")) return null;
+      const res = await fetch(coverUrl);
+      if (!res.ok) return null;
+      type = res.headers.get("Content-Type") ?? "image/jpeg";
+      if (!type.startsWith("image/")) return null;
+      bytes = new Uint8Array(await res.arrayBuffer());
+    }
+    if (bytes.length === 0) return null;
+
+    // Cover-crop to the OG canvas. The workerd resvg wasm ignores
+    // preserveAspectRatio on <image>, so the crop is computed explicitly:
+    // parse the natural size, then use an SVG viewBox that extracts the
+    // largest 1200x630-aspect region from the source image.
+    let natural: { w: number; h: number } | null = null;
+    try {
+      natural = parseImageSize(bytes);
+    } catch {
+      natural = null;
+    }
+    let sized: Uint8Array;
+    const embedded = `data:${type};base64,${bytesToBase64(bytes)}`;
+    if (natural) {
+      const { w, h } = natural;
+      const scale = Math.max(OG_W / w, OG_H / h);
+      const cropW = OG_W / scale;
+      const cropH = OG_H / scale;
+      const cx = (w - cropW) / 2;
+      const cy = (h - cropH) / 2;
+      const wrapper =
+        `<svg xmlns="http://www.w3.org/2000/svg" width="${OG_W}" height="${OG_H}"` +
+        ` viewBox="${cx} ${cy} ${cropW} ${cropH}">` +
+        `<image href="${embedded}" width="${w}" height="${h}"/>` +
+        `</svg>`;
+      const { Resvg } = await import("@cf-wasm/resvg/workerd");
+      const resvg = await Resvg.async(wrapper, { fitTo: { mode: "width", value: OG_W } });
+      sized = resvg.render().asPng();
+    } else {
+      sized = bytes; // unknown size: hand the original over (contain-like)
+    }
+    // TEMPORARY diagnostic (remove before merging)
+    console.log(`[cover-debug] url-type=${coverUrl?.slice(0, 5)} bytes=${bytes.length} natural=${natural ? `${natural.w}x${natural.h}` : "null"}`);
+    return `data:image/png;base64,${bytesToBase64(sized)}`;
+  } catch (e) {
+    console.error("[cover-debug] coverToDataUri FAILED:", e instanceof Error ? e.message : e);
+    return null;
+  }
+}
+
+/** Natural size of a PNG or JPEG from the file header (minimal parsers). */
+function parseImageSize(bytes: Uint8Array): { w: number; h: number } {
+  // PNG: 8-byte signature, then IHDR with big-endian width/height at 16/20.
+  if (bytes.length > 24 && bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47) {
+    const view = new DataView(bytes.buffer, bytes.byteOffset);
+    return { w: view.getUint32(16), h: view.getUint32(20) };
+  }
+  // JPEG: scan SOF0/SOF1/SOF2 markers for height/width.
+  if (bytes.length > 4 && bytes[0] === 0xff && bytes[1] === 0xd8) {
+    let pos = 2;
+    while (pos + 9 < bytes.length) {
+      if (bytes[pos] !== 0xff) {
+        pos++;
+        continue;
+      }
+      const marker = bytes[pos + 1];
+      if (marker >= 0xc0 && marker <= 0xcf && marker !== 0xc4 && marker !== 0xc8 && marker !== 0xcc) {
+        return { h: (bytes[pos + 5] << 8) | bytes[pos + 6], w: (bytes[pos + 7] << 8) | bytes[pos + 8] };
+      }
+      const len = (bytes[pos + 2] << 8) | bytes[pos + 3];
+      pos += 2 + len;
+    }
+  }
+  throw new Error("unsupported image format");
+}
+
+function bytesToBase64(bytes: Uint8Array): string {
+  let binary = "";
+  for (let i = 0; i < bytes.length; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return btoa(binary);
+}
+
+function base64ToBytes(b64: string): Uint8Array {
+  const bin = atob(b64);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) {
+    bytes[i] = bin.charCodeAt(i);
+  }
+  return bytes;
+}

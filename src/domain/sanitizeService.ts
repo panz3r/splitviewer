@@ -21,6 +21,10 @@ export interface SanitizedSnapshot {
   slug: string;
   groupId: string;
   name: string;
+  /** Group cover/avatar URL (Splitwise CDN) — group-level asset, same trust
+   *  class as `name`. Internal to the cache: the public HTML page never renders
+   *  it, only the OG image consumes it (as embedded pixels). */
+  coverUrl?: string | null;
   updatedAt: string | null;
   currencies: SanitizedCurrencyBlock[];
 }
@@ -34,6 +38,7 @@ export interface RawMemberInput {
 export interface RawGroupInput {
   id: string;
   name: string;
+  avatarUrl?: string;
   updatedAt?: string;
   members: RawMemberInput[];
   simplifiedDebts: Array<{ from: string; to: string; amount: string; currencyCode: string }>;
@@ -63,6 +68,7 @@ export function sanitizeGroup(slug: string, raw: RawGroupInput): SanitizedSnapsh
     slug,
     groupId: raw.id,
     name: raw.name,
+    coverUrl: raw.avatarUrl ?? null,
     updatedAt: raw.updatedAt ?? null,
     currencies: [...byCurrency.entries()]
       .sort(([a], [b]) => a.localeCompare(b))

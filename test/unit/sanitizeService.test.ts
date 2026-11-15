@@ -4,6 +4,7 @@ import { memberLabel, sanitizeGroup, type RawGroupInput } from "../../src/domain
 const RAW: RawGroupInput = {
   id: "999",
   name: "Flat 4B",
+  avatarUrl: "https://cdn.splitwise.com/group-cover.jpg",
   updatedAt: "2026-11-09T10:00:00Z",
   members: [
     { id: "101", firstName: "Marco", lastName: "Panzeri" },
@@ -60,6 +61,7 @@ describe("sanitizeGroup", () => {
     expect(snapshot.slug).toBe("slugslug1234567");
     expect(snapshot.groupId).toBe("999");
     expect(snapshot.name).toBe("Flat 4B");
+    expect(snapshot.coverUrl).toBe(RAW.avatarUrl); // group-level asset, same class as name
     expect(snapshot.updatedAt).toBe(RAW.updatedAt);
   });
 
