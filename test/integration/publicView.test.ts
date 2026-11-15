@@ -43,10 +43,11 @@ async function insertShare(userId: string, groupId: string, revoked = false): Pr
   return slug;
 }
 
-function sampleSnapshot(slug: string, name = "Trip Tuscany") {
+function sampleSnapshot(slug: string, name = "Trip Tuscany", coverUrl: string | null = null) {
   const raw: RawGroupInput = {
     id: "777",
     name,
+    avatarUrl: coverUrl ?? undefined,
     members: [
       { id: "1", firstName: "Marco", lastName: "Panzeri" },
       { id: "2", firstName: "Ada", lastName: "Lovelace" },
@@ -196,5 +197,29 @@ describe("GET /p/:slug", () => {
     const slug = await insertShare(userId, "450"); // dummy token -> Splitwise 401
     const res = await fetchRoute(`/p/${slug}/og.png`);
     expect(res.status).toBe(502);
+  });
+
+  it("og.png embeds the group cover (dimmed overlay); the page never leaks it", async () => {
+    // A tiny inline data URI keeps this deterministic: no outbound image fetch.
+    const tinyCover =
+      "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==";
+    const userId = await insertUser("558");
+    const slug = await insertShare(userId, "451");
+    await setCache(env, slug, sampleSnapshot(slug, "Cover Trip", tinyCover));
+
+    const og = await fetchRoute(`/p/${slug}/og.png`);
+    expect(og.status).toBe(200);
+    expect(og.headers.get("Content-Type")).toBe("image/png");
+    const bytes = new Uint8Array(await og.arrayBuffer());
+    expect(Array.from(bytes.slice(0, 8))).toEqual([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+    expect(bytes.length).toBeGreaterThan(10_000);
+
+    // Privacy: the public HTML page must never render the cover — as a URL
+    // or as embedded pixels. Only the OG PNG carries it.
+    const page = await fetchRoute(`/p/${slug}`);
+    const html = await page.text();
+    expect(html).toContain("Cover Trip");
+    expect(html).not.toContain(tinyCover);
+    expect(html).not.toContain("data:image/png;base64");
   });
 });

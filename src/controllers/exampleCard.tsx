@@ -64,6 +64,7 @@ function fakeSnapshot(): SanitizedSnapshot {
     slug: "example",
     groupId: "0", // fake — clearly not a real Splitwise id
     name,
+    coverUrl: null, // example card stays asset-free by design
     updatedAt: new Date().toISOString(),
     currencies,
   };

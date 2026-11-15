@@ -178,6 +178,8 @@ export interface RawGroup {
   id: string;
   name: string;
   updatedAt?: string;
+  /** Group cover/avatar URL (Splitwise CDN); group-level asset, may be absent. */
+  avatarUrl?: string;
   members: Array<{ id: string; firstName: string; lastName: string }>;
   simplifiedDebts: Array<{ from: string; to: string; amount: string; currencyCode: string }>;
   raw?: unknown; // kept for debugging; never persisted/rendered
@@ -205,6 +207,7 @@ export async function fetchGroup(
       id?: unknown;
       name?: unknown;
       updated_at?: unknown;
+      avatar?: unknown;
       members?: Array<{ id?: unknown; first_name?: unknown; last_name?: unknown }>;
       simplified_debts?: Array<{ from?: unknown; to?: unknown; amount?: unknown; currency_code?: unknown }>;
     };
@@ -217,6 +220,7 @@ export async function fetchGroup(
     id: String(group.id),
     name: typeof group.name === "string" ? group.name : "",
     updatedAt: typeof group.updated_at === "string" ? group.updated_at : undefined,
+    avatarUrl: parsePictureUrl(group.avatar ?? null),
     members: (group.members ?? [])
       .filter((m) => typeof m.first_name === "string")
       .map((m) => ({
