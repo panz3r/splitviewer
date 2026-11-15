@@ -239,8 +239,6 @@ export async function fetchGroup(
   if (!group || (typeof group.id !== "number" && typeof group.id !== "string")) {
     throw new SplitwiseAuthError("Splitwise get_group returned no group", 500);
   }
-  // TEMPORARY diagnostic for the cover-photo rotation — remove after verifying.
-  console.log(`[cover-photo-debug] id=${String(group.id)} cover_photo=${JSON.stringify(group.cover_photo ?? null)}`);
   return {
     id: String(group.id),
     name: typeof group.name === "string" ? group.name : "",
