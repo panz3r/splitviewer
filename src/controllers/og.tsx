@@ -17,11 +17,6 @@ import { ImageResponse, cache } from "@cf-wasm/og/workerd";
 import { OgCard } from "../ui/og-card";
 import { resolvePublicViewForEnv } from "../wiring";
 import { D1SharesRepo } from "../repositories/sharesRepo";
-
-// TEMPORARY: snapshot fixture for the /cover-debug probe — remove before merging.
-const viewSnapshotForDebug = {
-  coverUrl: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
-};
 import type { AppEnv } from "../types";
 
 export const ogImage = new Hono<AppEnv>()
@@ -133,11 +128,8 @@ async function coverToDataUri(coverUrl: string | null | undefined): Promise<stri
     } else {
       sized = bytes; // unknown size: hand the original over (contain-like)
     }
-    // TEMPORARY diagnostic (remove before merging)
-    console.log(`[cover-debug] url-type=${coverUrl?.slice(0, 5)} bytes=${bytes.length} natural=${natural ? `${natural.w}x${natural.h}` : "null"}`);
     return `data:image/png;base64,${bytesToBase64(sized)}`;
-  } catch (e) {
-    console.error("[cover-debug] coverToDataUri FAILED:", e instanceof Error ? e.message : e);
+  } catch {
     return null;
   }
 }
