@@ -38,7 +38,7 @@ export interface RawMemberInput {
 export interface RawGroupInput {
   id: string;
   name: string;
-  avatarUrl?: string;
+  coverUrl?: string;
   updatedAt?: string;
   members: RawMemberInput[];
   simplifiedDebts: Array<{ from: string; to: string; amount: string; currencyCode: string }>;
@@ -68,7 +68,7 @@ export function sanitizeGroup(slug: string, raw: RawGroupInput): SanitizedSnapsh
     slug,
     groupId: raw.id,
     name: raw.name,
-    coverUrl: raw.avatarUrl ?? null,
+    coverUrl: raw.coverUrl ?? null,
     updatedAt: raw.updatedAt ?? null,
     currencies: [...byCurrency.entries()]
       .sort(([a], [b]) => a.localeCompare(b))

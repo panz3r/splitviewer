@@ -47,7 +47,7 @@ function sampleSnapshot(slug: string, name = "Trip Tuscany", coverUrl: string | 
   const raw: RawGroupInput = {
     id: "777",
     name,
-    avatarUrl: coverUrl ?? undefined,
+    coverUrl: coverUrl ?? undefined,
     members: [
       { id: "1", firstName: "Marco", lastName: "Panzeri" },
       { id: "2", firstName: "Ada", lastName: "Lovelace" },

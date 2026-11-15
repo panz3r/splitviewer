@@ -166,6 +166,29 @@ function parsePictureUrl(picture: unknown): string | undefined {
   return undefined;
 }
 
+/**
+ * Group cover photo from GET /get_group/{id} (`cover_photo`). The value shape
+ * has been observed both as a plain URL string and as a size object
+ * ({small, medium, large}) — parse defensively, preferring the largest variant
+ * (the cover is a full-bleed background, quality matters).
+ */
+function parseCoverPhoto(value: unknown): string | undefined {
+  if (typeof value === "string") {
+    return value.length > 0 ? value : undefined;
+  }
+  if (value == null || typeof value !== "object") return undefined;
+  const p = value as Record<string, unknown>;
+  for (const size of ["large", "medium", "small"]) {
+    if (typeof p[size] === "string" && (p[size] as string).length > 0) {
+      return p[size] as string;
+    }
+  }
+  if (typeof p.url === "string" && p.url.length > 0) {
+    return p.url;
+  }
+  return undefined;
+}
+
 export interface SplitwiseUser {
   id: string;
   firstName?: string;
@@ -178,8 +201,8 @@ export interface RawGroup {
   id: string;
   name: string;
   updatedAt?: string;
-  /** Group cover/avatar URL (Splitwise CDN); group-level asset, may be absent. */
-  avatarUrl?: string;
+  /** Group cover photo URL (Splitwise CDN); group-level asset, may be absent. */
+  coverUrl?: string;
   members: Array<{ id: string; firstName: string; lastName: string }>;
   simplifiedDebts: Array<{ from: string; to: string; amount: string; currencyCode: string }>;
   raw?: unknown; // kept for debugging; never persisted/rendered
@@ -207,7 +230,7 @@ export async function fetchGroup(
       id?: unknown;
       name?: unknown;
       updated_at?: unknown;
-      avatar?: unknown;
+      cover_photo?: unknown;
       members?: Array<{ id?: unknown; first_name?: unknown; last_name?: unknown }>;
       simplified_debts?: Array<{ from?: unknown; to?: unknown; amount?: unknown; currency_code?: unknown }>;
     };
@@ -220,7 +243,7 @@ export async function fetchGroup(
     id: String(group.id),
     name: typeof group.name === "string" ? group.name : "",
     updatedAt: typeof group.updated_at === "string" ? group.updated_at : undefined,
-    avatarUrl: parsePictureUrl(group.avatar ?? null),
+    coverUrl: parseCoverPhoto(group.cover_photo ?? null),
     members: (group.members ?? [])
       .filter((m) => typeof m.first_name === "string")
       .map((m) => ({
