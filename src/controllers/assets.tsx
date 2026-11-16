@@ -38,7 +38,7 @@ export const assetsRoutes = new Hono<AppEnv>()
       "Cache-Control": "public, max-age=3600",
     }))
 
-  .get("/apple-touch-icon.png", (c) =>
+  .get("/apple-touch-icon.png", () =>
     new Response(base64ToBytes(APPLE_TOUCH_ICON_180_PNG_BASE64), {
       headers: {
         "Content-Type": "image/png",

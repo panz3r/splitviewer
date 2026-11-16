@@ -4,7 +4,7 @@
 import { Hono } from "hono";
 import type { Context } from "hono";
 import { requireSession } from "../middleware/session";
-import { repoUrl, shareServiceForEnv, SLUG_LENGTH } from "../wiring";
+import { shareServiceForEnv, SLUG_LENGTH } from "../wiring";
 import type { Lang } from "../i18n";
 import type { AppEnv } from "../types";
 

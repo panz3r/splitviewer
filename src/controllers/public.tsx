@@ -5,7 +5,6 @@
 // revocation beats the cache; missing and revoked slugs render identically.
 import { Hono } from "hono";
 import { deleteCache } from "../lib/cache";
-import { requireSession } from "../middleware/session";
 import { repoUrl, resolvePublicViewForEnv } from "../wiring";
 import { D1SharesRepo } from "../repositories/sharesRepo";
 import {

@@ -9,7 +9,7 @@
 import { Hono } from "hono";
 import type { Context } from "hono";
 import { deleteCookie, getCookie, setCookie } from "hono/cookie";
-import { decrypt, encrypt } from "../lib/crypto";
+import { encrypt } from "../lib/crypto";
 import { getSessionPayload } from "../middleware/session";
 import { D1UsersRepo } from "../repositories/usersRepo";
 import {

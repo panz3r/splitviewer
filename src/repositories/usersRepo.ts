@@ -4,8 +4,7 @@
 // The D1 impl owns the encryption step for tokens-at-rest (behavior contract:
 // the AES key lives in TOKEN_ENCRYPTION_KEY, never in code) — callers pass
 // plaintext tokens, rows always hold ciphertext.
-import { decrypt, encrypt } from "../lib/crypto";
-import { SPLITWISE, type TokenResult } from "../lib/splitwise";
+import { encrypt } from "../lib/crypto";
 import type { UserRow } from "../types";
 
 export interface UpsertUserInput {
