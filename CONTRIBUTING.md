@@ -58,7 +58,9 @@ repositories/clients via parameters. Presentation never calls services.
 
 - **Privacy is the core feature.** Public content may only ever originate from
   sanitized snapshots (`src/domain/sanitizeService.ts`): first name + last initial, no
-  emails/ids/avatars/invite links. If you add a feature, add a test that scans
+  emails/ids/avatars/invite links. Splitwise's `first_name` is free text and is
+  never trusted verbatim (first word only; email-like or letterless values
+  render as "Someone"). If you add a feature, add a test that scans
   the output for sensitive strings.
 - **All Cloudflare resources must be created with `jurisdiction: eu`** — this is a
   project compliance requirement. Concretely: `wrangler d1 create splitviewer --jurisdiction eu`

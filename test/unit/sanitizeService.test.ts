@@ -32,6 +32,25 @@ describe("memberLabel", () => {
   it("marks unknown ids as Someone", () => {
     expect(memberLabel(RAW.members, "555")).toBe("Someone");
   });
+
+  it("never echoes a full name typed into first_name", () => {
+    const label = (firstName: string, lastName = "") => memberLabel([{ id: "1", firstName, lastName }], "1");
+    expect(label("Marco Antonio Rossi")).toBe("Marco R.");
+    expect(label("  Marco   Rossi  ", "Panzeri")).toBe("Marco P.");
+    expect(label("Élodie", "Ørsted")).toBe("Élodie Ø.");
+  });
+
+  it("falls back to Someone for email-like, letterless, or empty first names", () => {
+    const label = (firstName: string) => memberLabel([{ id: "1", firstName, lastName: "Rossi" }], "1");
+    expect(label("marco.rossi@example.com")).toBe("Someone");
+    expect(label("+39 333 1234567")).toBe("Someone");
+    expect(label("   ")).toBe("Someone");
+  });
+
+  it("caps very long first names", () => {
+    const label = memberLabel([{ id: "1", firstName: "A".repeat(200), lastName: "" }], "1");
+    expect(label).toHaveLength(40);
+  });
 });
 
 describe("sanitizeGroup", () => {
