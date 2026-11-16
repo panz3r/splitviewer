@@ -27,8 +27,8 @@ export function createShareService(deps: ShareServiceDeps) {
   const generateSlug =
     deps.generateSlug ??
     (() => {
-      // Deterministic, dependency-free fallback; controllers normally inject
-      // nanoid so lengths/alphabets stay identical to the shipped behavior.
+      // No silent default: slug entropy is a security property, so callers
+      // (wiring.ts) must inject the generator explicitly.
       throw new Error("ShareServiceDeps.generateSlug is required");
     });
   const onWriteError =

@@ -8,6 +8,8 @@ import { signSession, verifyState, signState } from "../../src/domain/sessionSer
 // routes must not hit the network for the paths we assert here).
 const IncomingRequest = Request<unknown, IncomingRequestCfProperties>;
 
+const ORIGIN = "https://example.com";
+
 const fetchRoute = async (path: string, init?: RequestInit) => {
   const request = new IncomingRequest(`https://example.com${path}`, init);
   const ctx = createExecutionContext();
@@ -75,22 +77,51 @@ describe("GET /auth/callback", () => {
   });
 });
 
-describe("GET /auth/logout", () => {
-	it("clears the session cookie and redirects home (GET)", async () => {
+describe("/auth/logout", () => {
+	it("rejects GET (cross-site links/images cannot log users out)", async () => {
 		const res = await fetchRoute("/auth/logout");
+		expect(res.status).toBe(404);
+		expect(res.headers.get("Set-Cookie")).toBeNull();
+	});
+
+	it("POST clears the session cookie and redirects home", async () => {
+		const res = await fetchRoute("/auth/logout", { method: "POST", headers: { Origin: ORIGIN } });
 		expect(res.status).toBe(302);
 		expect(res.headers.get("Location")).toBe("/");
 		const cookie = res.headers.get("Set-Cookie") ?? "";
 		expect(cookie).toContain("sw_session=");
-		// expired cookie → cleared
 		expect(cookie.toLowerCase()).toContain("max-age=0");
 	});
 
-	it("also accepts POST (the header menu submits a form)", async () => {
-		const res = await fetchRoute("/auth/logout", { method: "POST" });
+	it("POST revokes the session server-side (a copied cookie stops working)", async () => {
+		const userId = crypto.randomUUID();
+		await env.DB.prepare(
+			`INSERT INTO users (id, splitwise_user_id, encrypted_access_token, encrypted_refresh_token)
+			 VALUES (?1, ?2, 'x', 'x')`,
+		)
+			.bind(userId, `sw-logout-${userId}`)
+			.run();
+		const cookie = `sw_session=${await signSession(userId, env.SESSION_SECRET, 0)}`;
+		const probe = () =>
+			fetchRoute("/api/shares/create", {
+				method: "POST",
+				headers: { Cookie: cookie, "Content-Type": "application/json" },
+				body: "{}",
+			});
+
+		expect((await probe()).status).not.toBe(401);
+		const res = await fetchRoute("/auth/logout", { method: "POST", headers: { Cookie: cookie, Origin: ORIGIN } });
 		expect(res.status).toBe(302);
-		expect(res.headers.get("Location")).toBe("/");
-		expect((res.headers.get("Set-Cookie") ?? "").toLowerCase()).toContain("max-age=0");
+		expect((await probe()).status).toBe(401);
+	});
+
+	it("POST from another origin is rejected (CSRF) and keeps the session", async () => {
+		const res = await fetchRoute("/auth/logout", {
+			method: "POST",
+			headers: { Origin: "https://evil.example", "Sec-Fetch-Site": "cross-site" },
+		});
+		expect(res.status).toBe(403);
+		expect(res.headers.get("Set-Cookie")).toBeNull();
 	});
 });
 

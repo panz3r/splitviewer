@@ -68,6 +68,7 @@ live in code or config files — details and troubleshooting in [CONTRIBUTING.md
 - **Revocation is instant**: deactivating a share kills the public page, its cache row,
   and the OG image immediately.
 - Data storage is EU-jurisdiction Cloudflare D1 only.
+- Web fonts are self-hosted by the Worker — no visitor requests go to a font CDN.
 
 ## Architecture
 

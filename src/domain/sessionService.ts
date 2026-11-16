@@ -27,10 +27,15 @@ export async function verifyState(token: string, secret: string): Promise<StateP
   return null;
 }
 
-export async function signSession(userId: string, secret: string): Promise<string> {
+export async function signSession(
+  userId: string,
+  secret: string,
+  sessionVersion = 0,
+): Promise<string> {
   const payload: SessionPayload = {
     typ: "session",
     userId,
+    sv: sessionVersion,
     exp: Math.floor(Date.now() / 1000) + SESSION_TTL_SECONDS,
   };
   return sign(payload, secret, "HS256");
@@ -38,7 +43,12 @@ export async function signSession(userId: string, secret: string): Promise<strin
 
 export async function verifySession(token: string, secret: string): Promise<SessionPayload | null> {
   const payload = (await verify(token, secret, "HS256").catch(() => null)) as unknown;
-  if (payload && (payload as SessionPayload).typ === "session") {
+  // Tokens without an `sv` claim predate server-side revocation: reject them.
+  if (
+    payload &&
+    (payload as SessionPayload).typ === "session" &&
+    typeof (payload as SessionPayload).sv === "number"
+  ) {
     return payload as SessionPayload;
   }
   return null;

@@ -4,11 +4,9 @@
 import { Hono } from "hono";
 import type { Context } from "hono";
 import { requireSession } from "../middleware/session";
-import { repoUrl, shareServiceForEnv, SLUG_LENGTH } from "../wiring";
+import { shareServiceForEnv } from "../wiring";
 import type { Lang } from "../i18n";
 import type { AppEnv } from "../types";
-
-export { SLUG_LENGTH };
 
 function isJson(c: Context): boolean {
   return (c.req.header("content-type") ?? "").includes("application/json");
@@ -20,26 +18,26 @@ interface CreateInput {
   lang: Lang; // for post-action redirect (dashboard language)
 }
 
+// Splitwise group ids are numeric; slugs use the nanoid URL alphabet.
+const GROUP_ID_RE = /^\d{1,20}$/;
+const SLUG_RE = /^[A-Za-z0-9_-]{1,64}$/;
+const MAX_GROUP_NAME_LENGTH = 200;
+
+function toCreateInput(rawId: unknown, rawName: unknown, rawLang: unknown): CreateInput | null {
+  const groupId = typeof rawId === "string" || typeof rawId === "number" ? String(rawId).trim() : "";
+  if (!GROUP_ID_RE.test(groupId)) return null;
+  const name = typeof rawName === "string" ? Array.from(rawName.trim()).slice(0, MAX_GROUP_NAME_LENGTH).join("") : "";
+  return {
+    groupId,
+    groupName: name || `Group ${groupId}`,
+    lang: rawLang === "it" ? "it" : "en",
+  };
+}
+
 async function parseCreateInput(c: Context<AppEnv>): Promise<CreateInput | null> {
   try {
-    if (isJson(c)) {
-      const raw = (await c.req.json()) as Record<string, unknown>;
-      const groupId = typeof raw.groupId === "string" || typeof raw.groupId === "number" ? String(raw.groupId) : "";
-      if (!groupId) return null;
-      return {
-        groupId,
-        groupName: typeof raw.groupName === "string" && raw.groupName ? raw.groupName : `Group ${groupId}`,
-        lang: raw.lang === "it" ? "it" : "en",
-      };
-    }
-    const form = await c.req.parseBody();
-    const groupId = typeof form.groupId === "string" && form.groupId !== "" ? form.groupId : "";
-    if (!groupId) return null;
-    return {
-      groupId,
-      groupName: typeof form.groupName === "string" && form.groupName !== "" ? form.groupName : `Group ${groupId}`,
-      lang: form.lang === "it" ? "it" : "en",
-    };
+    const raw = isJson(c) ? ((await c.req.json()) as Record<string, unknown>) : await c.req.parseBody();
+    return toCreateInput(raw.groupId, raw.groupName, raw.lang);
   } catch {
     return null;
   }
@@ -52,14 +50,9 @@ interface RevokeInput {
 
 async function parseRevokeInput(c: Context<AppEnv>): Promise<RevokeInput | null> {
   try {
-    if (isJson(c)) {
-      const raw = (await c.req.json()) as Record<string, unknown>;
-      const slug = typeof raw.slug === "string" && raw.slug ? raw.slug : "";
-      return slug ? { slug, lang: raw.lang === "it" ? "it" : "en" } : null;
-    }
-    const form = await c.req.parseBody();
-    const slug = typeof form.slug === "string" && form.slug !== "" ? form.slug : "";
-    return slug ? { slug, lang: form.lang === "it" ? "it" : "en" } : null;
+    const raw = isJson(c) ? ((await c.req.json()) as Record<string, unknown>) : await c.req.parseBody();
+    if (typeof raw.slug !== "string" || !SLUG_RE.test(raw.slug)) return null;
+    return { slug: raw.slug, lang: raw.lang === "it" ? "it" : "en" };
   } catch {
     return null;
   }

@@ -1,6 +1,7 @@
 // Single source of truth for the app's stylesheet (design tokens + utilities).
 // Splitwise-adjacent tone: fresh green, soft paper, rounded, friendly copy.
 // All pages render through PageShell so this is the only CSS that ships.
+import { FONT_FACE_CSS } from "./fontAssets";
 
 const TOKENS = `
   :root {
@@ -169,4 +170,4 @@ const HERO = `
   .checklist li::before { content: "✓ "; color: var(--green); font-weight: 700; }
 `;
 
-export const APP_STYLE = `${TOKENS}${BASE}${LAYOUT}${HEADER_FOOTER}${COMPONENTS}${HERO}`;
+export const APP_STYLE = `${FONT_FACE_CSS}${TOKENS}${BASE}${LAYOUT}${HEADER_FOOTER}${COMPONENTS}${HERO}`;

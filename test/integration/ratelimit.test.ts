@@ -1,5 +1,10 @@
+import { env } from "cloudflare:workers";
+import { createExecutionContext, waitOnExecutionContext } from "cloudflare:test";
 import { describe, expect, it } from "vitest";
+import worker from "../../src/index";
 import { rateLimit } from "../../src/lib/ratelimit";
+
+const IncomingRequest = Request<unknown, IncomingRequestCfProperties>;
 
 describe("rateLimit", () => {
   it("allows up to limit, then 429s with retry-after inside the window", () => {
@@ -27,5 +32,22 @@ describe("rateLimit", () => {
     expect(rateLimit("b3", "ipA", 1, 60_000, now).ok).toBe(false);
     expect(rateLimit("b3", "ipB", 1, 60_000, now).ok).toBe(true);
     expect(rateLimit("b4", "ipA", 1, 60_000, now).ok).toBe(true);
+  });
+});
+
+describe("ipRateLimit middleware", () => {
+  it("ignores spoofable X-Forwarded-For when bucketing clients", async () => {
+    const statuses: number[] = [];
+    for (let i = 0; i < 31; i++) {
+      const request = new IncomingRequest("http://example.com/p/nope/og.png", {
+        headers: { "X-Forwarded-For": `198.51.100.${i}` },
+      });
+      const ctx = createExecutionContext();
+      const res = await worker.fetch(request, env, ctx);
+      await waitOnExecutionContext(ctx);
+      statuses.push(res.status);
+    }
+    // og-image limit is 30/min: rotating X-Forwarded-For must not mint new buckets.
+    expect(statuses.at(-1)).toBe(429);
   });
 });

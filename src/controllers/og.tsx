@@ -17,6 +17,7 @@ import { ImageResponse, cache } from "@cf-wasm/og/workerd";
 import { OgCard } from "../ui/og-card";
 import { resolvePublicViewForEnv } from "../wiring";
 import { D1SharesRepo } from "../repositories/sharesRepo";
+import { readBodyCapped } from "../lib/http";
 import type { AppEnv } from "../types";
 
 export const ogImage = new Hono<AppEnv>()
@@ -37,8 +38,6 @@ export const ogImage = new Hono<AppEnv>()
     // the PNG; the URL itself is never rendered). Any failure degrades to the
     // plain charcoal card.
     const coverImage = await coverToDataUri(view.snapshot.coverUrl);
-    // TEMPORARY diagnostic (remove before merging)
-    c.header("X-Cover-Debug", `len=${coverImage?.length ?? "null"} head=${(coverImage ?? "").slice(0, 30)}`);
 
     // Required by @cf-wasm/og in workerd (getExecutionContext crashes otherwise).
     cache.setExecutionContext(c.executionCtx);
@@ -77,6 +76,10 @@ export const ogImage = new Hono<AppEnv>()
  */
 const OG_W = 1200;
 const OG_H = 630;
+// Upstream cover guards: Splitwise covers are well under this; anything larger
+// or slower just falls back to the plain background.
+const MAX_COVER_BYTES = 5 * 1024 * 1024;
+const COVER_FETCH_TIMEOUT_MS = 4_000;
 
 async function coverToDataUri(coverUrl: string | null | undefined): Promise<string | null> {
   try {
@@ -86,15 +89,18 @@ async function coverToDataUri(coverUrl: string | null | undefined): Promise<stri
     if (coverUrl.startsWith("data:")) {
       const match = /^data:([^;,]+)?(;base64)?,(.*)$/.exec(coverUrl);
       if (!match || !match[2]) return null; // only base64 data URIs (our shape)
+      if (match[3].length > Math.ceil((MAX_COVER_BYTES * 4) / 3)) return null;
       type = match[1] ?? "image/png";
       bytes = base64ToBytes(match[3]);
     } else {
       if (!coverUrl.startsWith("https://")) return null;
-      const res = await fetch(coverUrl);
+      const res = await fetch(coverUrl, { signal: AbortSignal.timeout(COVER_FETCH_TIMEOUT_MS) });
       if (!res.ok) return null;
       type = res.headers.get("Content-Type") ?? "image/jpeg";
       if (!type.startsWith("image/")) return null;
-      bytes = new Uint8Array(await res.arrayBuffer());
+      const body = await readBodyCapped(res, MAX_COVER_BYTES);
+      if (!body) return null;
+      bytes = body;
     }
     if (bytes.length === 0) return null;
 

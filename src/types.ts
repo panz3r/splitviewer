@@ -8,6 +8,8 @@ export interface UserRow {
   token_expiry: number | null;
   avatar_url: string | null;
   first_name: string | null;
+  /** Bumped on logout; sessions carrying an older `sv` claim are rejected. */
+  session_version: number;
 }
 
 export type AppEnv = {

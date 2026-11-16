@@ -18,6 +18,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
 
       - uses: actions/setup-node@v7.1.0
         with:
@@ -47,7 +49,9 @@ jobs:
         run: npm test
 
   # Auto-merge Dependabot PRs once the full check suite above is green.
-  # Minor + patch bumps merge automatically; majors stay for manual review.
+  # Patch bumps merge automatically (devDependencies: minor + patch); runtime
+  # minors and all majors stay for manual review — anything merged here ships
+  # on the next release without a human looking at it.
   automerge:
     needs: checks
     if: github.actor == 'dependabot[bot]'
@@ -60,4 +64,5 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           merge-method: squash # the repo only allows squash merges
-          target: minor # covers minor and patch; majors are skipped here
+          target: patch # runtime + indirect deps: patch only
+          target-development: minor # devDependencies: minor and patch

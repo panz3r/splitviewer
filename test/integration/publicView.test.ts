@@ -2,14 +2,18 @@ import { env } from "cloudflare:workers";
 import { createExecutionContext, waitOnExecutionContext } from "cloudflare:test";
 import worker from "../../src/index";
 import { describe, expect, it } from "vitest";
-import { deleteCache, FRESH_WINDOW_SECONDS, getCache, isFresh, setCache } from "../../src/lib/cache";
-import { sanitizeGroup, type RawGroupInput } from "../../src/domain/sanitizeService";
+import { D1CacheRepo, FRESH_WINDOW_SECONDS, isFresh } from "../../src/repositories/cacheRepo";
+
+import { sanitizeGroup, type RawGroupInput, type SanitizedSnapshot } from "../../src/domain/sanitizeService";
+const cacheRepo = new D1CacheRepo(env);
+const setCache = (slug: string, snapshot: SanitizedSnapshot, now = Math.floor(Date.now() / 1000)) =>
+  cacheRepo.set(slug, snapshot, now);
 
 // Note on the revalidate paths: the route's outbound Splitwise call cannot be
 // mocked inside workerd, but these tests use a dummy encrypted token, so live
 // calls deterministically yield SplitwiseAuthError(401) — the graceful-stale
 // branch — regardless of network state. The success path ("refetched") is
-// verified live in the browser (plans/phase-4-public-view.md checklist).
+// verified live in the browser.
 
 const IncomingRequest = Request<unknown, IncomingRequestCfProperties>;
 
@@ -73,9 +77,9 @@ describe("cache helpers", () => {
     const slug = "cacheslug000001";
     const snapshot = sampleSnapshot(slug);
     const now = Math.floor(Date.now() / 1000);
-    await setCache(env, slug, snapshot, now);
+    await setCache(slug, snapshot, now);
 
-    const row = await getCache(env, slug);
+    const row = await cacheRepo.get(slug);
     expect(row?.snapshot).toEqual(snapshot);
     expect(row?.lastFetchedAt).toBe(now);
 
@@ -86,8 +90,8 @@ describe("cache helpers", () => {
     expect(isFresh(now - FRESH_WINDOW_SECONDS, now)).toBe(false);
     expect(isFresh(now - FRESH_WINDOW_SECONDS + 1, now)).toBe(true); // boundary excluded
 
-    await deleteCache(env, slug);
-    expect(await getCache(env, slug)).toBeNull();
+    await cacheRepo.delete(slug);
+    expect(await cacheRepo.get(slug)).toBeNull();
   });
 });
 
@@ -116,18 +120,18 @@ describe("GET /p/:slug", () => {
   it("404s revoked slugs identically and drops their cache", async () => {
     const userId = await insertUser("551");
     const slug = await insertShare(userId, "333", true);
-    await setCache(env, slug, sampleSnapshot(slug)); // warm cache must not matter
+    await setCache(slug, sampleSnapshot(slug)); // warm cache must not matter
 
     const res = await fetchRoute(`/p/${slug}`);
     expect(res.status).toBe(404);
-    expect(await getCache(env, slug)).toBeNull(); // cache dropped on revoke
+    expect(await cacheRepo.get(slug)).toBeNull(); // cache dropped on revoke
     expect(await (await fetchRoute("/p/nosuchslug123456")).text()).toBe(await res.text());
   });
 
   it("renders the fresh cache without calling Splitwise", async () => {
     const userId = await insertUser("552");
     const slug = await insertShare(userId, "444");
-    await setCache(env, slug, sampleSnapshot(slug));
+    await setCache(slug, sampleSnapshot(slug));
 
     const res = await fetchRoute(`/p/${slug}`);
     expect(res.status).toBe(200);
@@ -148,7 +152,7 @@ describe("GET /p/:slug", () => {
     const userId = await insertUser("553");
     const slug = await insertShare(userId, "445");
     const snapshot = sampleSnapshot(slug, "Stale Trip");
-    await setCache(env, slug, snapshot, Math.floor(Date.now() / 1000) - FRESH_WINDOW_SECONDS - 1);
+    await setCache(slug, snapshot, Math.floor(Date.now() / 1000) - FRESH_WINDOW_SECONDS - 1);
 
     const res = await fetchRoute(`/p/${slug}`);
     expect(res.status).toBe(200);
@@ -176,7 +180,7 @@ describe("GET /p/:slug", () => {
   it("og.png renders a PNG when a fresh snapshot exists", async () => {
     const userId = await insertUser("556");
     const slug = await insertShare(userId, "449");
-    await setCache(env, slug, sampleSnapshot(slug));
+    await setCache(slug, sampleSnapshot(slug));
 
     const res = await fetchRoute(`/p/${slug}/og.png`);
     expect(res.status).toBe(200);
@@ -205,7 +209,7 @@ describe("GET /p/:slug", () => {
       "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==";
     const userId = await insertUser("558");
     const slug = await insertShare(userId, "451");
-    await setCache(env, slug, sampleSnapshot(slug, "Cover Trip", tinyCover));
+    await setCache(slug, sampleSnapshot(slug, "Cover Trip", tinyCover));
 
     const og = await fetchRoute(`/p/${slug}/og.png`);
     expect(og.status).toBe(200);

@@ -55,6 +55,20 @@ describe("session tokens", () => {
     expect(payload!.exp).toBeGreaterThan(now + SESSION_TTL_SECONDS - 120);
   });
 
+  it("carries the session version as the sv claim", async () => {
+    const payload = await verifySession(await signSession("uuid-1", KEY, 3), KEY);
+    expect(payload?.sv).toBe(3);
+  });
+
+  it("rejects session tokens without an sv claim (pre-revocation format)", async () => {
+    const legacy = await sign(
+      { typ: "session", userId: "uuid-1", exp: Math.floor(Date.now() / 1000) + 60 },
+      KEY,
+      "HS256",
+    );
+    expect(await verifySession(legacy, KEY)).toBeNull();
+  });
+
   it("rejects expired tokens", async () => {
     const expired = await sign(
       { typ: "oauth_state", exp: Math.floor(Date.now() / 1000) - 10 },

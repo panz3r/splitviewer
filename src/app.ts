@@ -1,8 +1,9 @@
-// App composition root (MVC refactor phase 02.11). Builds the Hono app:
+// App composition root. Builds the Hono app:
 // public-route hardening (rate limits) BEFORE the route handlers — Hono
 // composes in registration order, so later uses would be dead code.
 // All routers live in controllers/; language is derived in middleware/i18n.
 import { Hono } from "hono";
+import { csrf } from "hono/csrf";
 import {
   auth,
   homeRoutes,
@@ -16,10 +17,18 @@ import {
 import { assetsRoutes } from "./controllers/assets";
 import { ipRateLimit } from "./lib/ratelimit";
 import { langMiddleware } from "./middleware/i18n";
+import { securityHeaders } from "./middleware/securityHeaders";
 import type { AppEnv } from "./types";
 
 export function createApp(): Hono<AppEnv> {
   const app = new Hono<AppEnv>();
+
+  // Security headers wrap every response (including 404s and rate-limit hits).
+  app.use("*", securityHeaders);
+
+  // CSRF defense in depth on top of SameSite=Lax cookies: unsafe form-type
+  // requests must come from this origin (Origin / Sec-Fetch-Site checks).
+  app.use("*", csrf());
 
   // Language derivation must run before any handler that reads c.get("lang").
   app.use("*", langMiddleware);

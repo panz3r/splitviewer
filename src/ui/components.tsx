@@ -4,14 +4,12 @@ import type { FC } from "hono/jsx";
 import { raw } from "hono/html";
 import { APP_STYLE } from "./styles";
 import { getDict, type Lang } from "../i18n";
-import { DEFAULT_REPO_URL, repoLinks } from "../lib/links";
+import { repoLinks } from "../lib/links";
 import { LogoIcon } from "./icon";
-
-export { DEFAULT_REPO_URL };
+import { PRELOAD_FONTS } from "./fontAssets";
 
 /** PageShell footer links come from the configured repo (REPO_URL wrangler var). */
 export { repoLinks } from "../lib/links";
-export type { RepoLinks } from "../lib/links";
 
 export interface PageShellProps {
   title: string;
@@ -65,13 +63,11 @@ export const PageShell: FC<PageShellProps> = (props) => {
         <meta name="color-scheme" content="light dark" />
         <link rel="icon" type="image/svg+xml" href="/icon.svg" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
-        {/* Splitwise's own type stack (their attributions): Montserrat display, Lato body */}
-        <link
-          rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&family=Lato:wght@400;700&display=swap"
-        />
+        {/* Splitwise's own type stack (Montserrat display, Lato body), self-hosted
+            so pages make no third-party requests. */}
+        {PRELOAD_FONTS.map((href) => (
+          <link rel="preload" href={href} as="font" type="font/woff2" crossOrigin="" />
+        ))}
         {hreflang?.map((alt) => (
           <link rel="alternate" hreflang={alt.lang} href={alt.href} />
         ))}
@@ -176,13 +172,9 @@ export function Flash({ msg, err }: { msg?: string; err?: string }) {
   return <p class={`flash${err ? " flash--err" : ""}`}>{err ?? msg}</p>;
 }
 
-export function Badge({ on }: { on: boolean }) {
-  return <span class={`badge ${on ? "" : "badge--off"}`}>{on ? "public" : "off"}</span>;
-}
-
 /** Tiny inline-SVG flags (Windows renders flag emoji as letter codes, so SVGs
  * are the reliable cross-platform choice). */
-export function FlagIcon({ lang }: { lang: Lang }) {
+function FlagIcon({ lang }: { lang: Lang }) {
   if (lang === "it") {
     return (
       <svg class="flag" viewBox="0 0 3 2" width="20" height="14" aria-hidden="true">

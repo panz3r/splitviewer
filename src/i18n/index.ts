@@ -9,7 +9,7 @@ export type Lang = "en" | "it";
 /** Translation shape — derived from the English JSON file. */
 export type Dict = typeof enJson;
 
-export const dictionaries: Record<Lang, Dict> = {
+const dictionaries: Record<Lang, Dict> = {
   en: enJson,
   it: itJson as Dict,
 };
@@ -17,5 +17,3 @@ export const dictionaries: Record<Lang, Dict> = {
 export function getDict(lang: Lang): Dict {
   return dictionaries[lang];
 }
-
-export { enJson, itJson };

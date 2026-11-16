@@ -29,8 +29,8 @@ Key DTOs (in `src/domain/types.ts`):
 - **`DashboardData`** — sectioned group cards (`public|private|archived`, 40-day archive rule) + resolved flash text. Produced by `domain/dashboardService`.
 - **`FlashKey`s** — opaque query-param values (`?msg=created`, `?err=not_found`) carried in redirects; `domain/flashService` maps them to localized dict text so no route hardcodes copy.
 
-Invariants worth knowing before changing anything (full contracts with tests:
-`plans/refactor-mvc.md`): privacy wall (sanitized snapshots only, everywhere),
+Invariants worth knowing before changing anything (each is pinned by tests
+under `test/`): privacy wall (sanitized snapshots only, everywhere),
 multi-currency grouping (never blended), instant revocation (cache dropped on
 revoke), tokens encrypted at rest, cookies `Secure` only on https, Hono
 middleware registered before the routes that depend on them. Gotcha log:

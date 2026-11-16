@@ -1,0 +1,28 @@
+#!/bin/sh
+# Blocks commits whose staged changes contain secrets, using betterleaks
+# (https://github.com/betterleaks/betterleaks). Install with:
+#   npm run hooks:install
+# The "Secret scan" CI workflow enforces the same check on every push/PR.
+# Bypass for a known false positive: add a `betterleaks:allow` comment on the
+# line (preferred) or, as a last resort, `git commit --no-verify`.
+
+if ! command -v betterleaks >/dev/null 2>&1; then
+	echo "pre-commit: betterleaks not found — skipping secret scan (CI still runs it)." >&2
+	echo "            Install: brew install betterleaks  (see CONTRIBUTING.md)" >&2
+	exit 0
+fi
+
+major="$(betterleaks version 2>/dev/null | grep -oE '[0-9]+' | head -n 1)"
+if [ "${major:-1}" -ge 2 ]; then
+	# v2 scans staged changes from a diff on stdin.
+	git diff --cached --no-ext-diff --no-textconv --no-color --src-prefix=a/ --dst-prefix=b/ |
+		betterleaks stdin --git-diff --redact --no-banner
+else
+	betterleaks git --staged --redact --no-banner --verbose .
+fi
+status=$?
+
+if [ "$status" -ne 0 ]; then
+	echo "pre-commit: betterleaks flagged staged changes (see above) — commit aborted." >&2
+fi
+exit "$status"

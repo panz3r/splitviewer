@@ -44,13 +44,24 @@ export interface RawGroupInput {
   simplifiedDebts: Array<{ from: string; to: string; amount: string; currencyCode: string }>;
 }
 
-/** "Marco" + "Panzeri" → "Marco P."; unknown id → "Someone". */
+const UNKNOWN_MEMBER = "Someone";
+const MAX_FIRST_NAME_LENGTH = 40;
+
+/**
+ * "Marco" + "Panzeri" → "Marco P."; unknown id → "Someone".
+ * Splitwise's first_name is free text, so it is never trusted verbatim: only
+ * its first word survives (a full name typed into first_name still collapses
+ * to "First L."), and email-like or letterless values fall back to "Someone".
+ */
 export function memberLabel(members: RawMemberInput[], id: string): string {
   const member = members.find((m) => m.id === id);
-  if (!member) return "Someone";
-  const first = member.firstName.trim();
-  const lastInitial = member.lastName.trim().charAt(0);
-  return lastInitial ? `${first} ${lastInitial.toUpperCase()}.` : first;
+  if (!member) return UNKNOWN_MEMBER;
+  const words = member.firstName.trim().split(/\s+/).filter(Boolean);
+  const first = (words[0] ?? "").slice(0, MAX_FIRST_NAME_LENGTH);
+  if (!first || first.includes("@") || !/\p{L}/u.test(first)) return UNKNOWN_MEMBER;
+  const surname = member.lastName.trim() || (words.length > 1 ? words[words.length - 1] : "");
+  const lastInitial = Array.from(surname)[0] ?? "";
+  return /\p{L}/u.test(lastInitial) ? `${first} ${lastInitial.toUpperCase()}.` : first;
 }
 
 export function sanitizeGroup(slug: string, raw: RawGroupInput): SanitizedSnapshot {

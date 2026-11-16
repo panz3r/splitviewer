@@ -1,12 +1,20 @@
-name: Report a problem / request a takedown
-description: Bug reports, privacy concerns, and takedown requests for public dashboards
+name: Report a problem
+description: Bug reports and questions (takedowns and privacy concerns are reported privately)
 body:
   - type: markdown
     attributes:
       value: |
-        Thanks for helping keep SplitViewer safe. Useful context:
+        Thanks for helping keep SplitViewer safe.
 
-        - **Takedown**: public pages only ever show first names + last initials
+        > [!WARNING]
+        > **Issues are public.** Never post a share link (`…/p/<slug>`) here.
+        > For takedown requests and privacy concerns, use
+        > [private reporting](https://github.com/panz3r/splitviewer/security/advisories/new)
+        > instead — see [SECURITY.md](https://github.com/panz3r/splitviewer/blob/main/SECURITY.md).
+
+        Useful context:
+
+        - **What is public**: public pages only ever show first names + last initials
           ("Marco P."), never emails, avatars, or full surnames. Share owners can
           revoke their own links instantly from the dashboard.
         - **Data storage**: Cloudflare D1 restricted to EU jurisdiction; OAuth
@@ -21,25 +29,16 @@ body:
       label: What is this report about?
       options:
         - Bug (something broken)
-        - Takedown request (a share link that should not be public)
-        - Privacy concern
         - Question
         - Other
     validations:
       required: true
 
-  - type: input
-    id: share_link
-    attributes:
-      label: Share link involved (if any)
-      description: The full public URL (…/p/<slug>). Leave empty for general bugs or questions.
-      placeholder: https://splitviewer.mattiapanzeri.workers.dev/p/XXXXXXXXXXXXXXXX
-
   - type: textarea
     id: description
     attributes:
       label: What happened?
-      description: What you saw, what you expected, and steps to reproduce for bugs. Please do NOT paste private expense data — links and masked names are enough.
+      description: What you saw, what you expected, and steps to reproduce for bugs. Please do NOT paste share links or private expense data.
     validations:
       required: true
 
@@ -56,5 +55,5 @@ body:
       options:
         - label: I understand SplitViewer is an independent open-source tool, not affiliated with Splitwise.
           required: true
-        - label: I have not included private data (emails, receipts, full surnames) in this report.
+        - label: I have not included share links or private data (emails, receipts, full surnames) in this report.
           required: true

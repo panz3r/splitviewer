@@ -1,51 +1,12 @@
 // Dashboard view (presentation only): group cards with share actions on the
-// shared shell. The share-button script is the only client JS in the app
+// shared shell. The share-button script (ui/shareScript.ts) is the only client JS in the app
 // (public pages stay JS-free by design). All data arrives via props — the
 // sectioning/flash logic lives in domain/dashboardService.
 import type { FC } from "hono/jsx";
 import { getDict, type Dict, type Lang } from "../i18n";
 import { Flash, type PageShellProps } from "./components";
+import { SHARE_SCRIPT_PATH } from "./shareScript";
 import type { DashboardData, DashboardGroup, DashboardShare } from "../domain/types";
-
-const SHARE_SCRIPT = `
-  function showToast(msg) {
-    var t = document.getElementById("toast");
-    if (!t) {
-      t = document.createElement("div");
-      t.id = "toast";
-      t.className = "toast";
-      t.setAttribute("role", "status");
-      document.body.appendChild(t);
-    }
-    t.textContent = msg;
-    t.classList.add("show");
-    if (t._h) clearTimeout(t._h);
-    t._h = setTimeout(function () { t.classList.remove("show"); }, 1800);
-  }
-  document.querySelectorAll("[data-share]").forEach(function (btn) {
-    var url = btn.getAttribute("data-share");
-    var labels = JSON.parse(btn.getAttribute("data-labels"));
-    var supportsShare = typeof navigator.share === "function";
-    btn.textContent = supportsShare ? labels.share : labels.shareNoWebShare;
-    btn.addEventListener("click", function () {
-      if (supportsShare) {
-        navigator.share({ title: "SplitViewer", url: url }).then(
-          function () { showToast(labels.sharedToast); },
-          function (err) {
-            if (err && err.name !== "AbortError") showToast(labels.couldNotShare);
-          }
-        );
-      } else {
-        navigator.clipboard.writeText(url).then(
-          function () { showToast(labels.copiedToast); },
-          function () {
-            showToast(labels.copyFallback);
-          }
-        );
-      }
-    });
-  });
-`;
 
 const GAVATAR_STYLE = `
   .gavatar { width: 2.6rem; height: 2.6rem; border-radius: 8px; object-fit: cover;
@@ -204,12 +165,11 @@ export function dashboardPage(props: {
           )
         )}
 
-        {/* Toast + share script. NOTE: hono/jsx escapes string children, so
-            the script MUST go through dangerouslySetInnerHTML (raw) or the
-            browser gets a syntax-error script tag. Labels are injected as
-            data-attributes (JSON) so the script is language-agnostic. */}
+        {/* Toast + share script. The script is served from /share.js (the CSP
+            forbids inline scripts). Labels are injected as data-attributes
+            (JSON) so the script is language-agnostic. */}
         <div id="toast" class="toast" aria-live="polite"></div>
-        <script dangerouslySetInnerHTML={{ __html: SHARE_SCRIPT }} />
+        <script src={SHARE_SCRIPT_PATH} defer></script>
       </>
     ),
   };

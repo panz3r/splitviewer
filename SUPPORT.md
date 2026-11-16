@@ -47,11 +47,14 @@ last sanitized snapshot until then.
 
 ## Report a problem or request a takedown
 
-- Report form (guided template): <https://github.com/panz3r/splitviewer/issues/new?template=report.yml>
-  — covers bugs, privacy concerns, and takedown requests in one form.
-- Takedown context (a link that shouldn't be public): include the share link
-  (`…/p/<slug>`); we treat leak reports as urgent. Share owners can always
-  revoke instantly themselves from the dashboard.
+- **Takedown requests and privacy concerns** (a link that shouldn't be public,
+  a name that isn't masked properly): report them **privately** via
+  <https://github.com/panz3r/splitviewer/security/advisories/new> — never post a
+  share link (`…/p/<slug>`) in a public issue. We treat leak reports as urgent;
+  share owners can always revoke instantly themselves from the dashboard.
+  See [SECURITY.md](SECURITY.md).
+- **Bugs and questions**: guided report form at
+  <https://github.com/panz3r/splitviewer/issues/new?template=report.yml>.
 - General issue list: <https://github.com/panz3r/splitviewer/issues>
 
 ## Contributing

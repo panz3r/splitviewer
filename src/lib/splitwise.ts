@@ -1,6 +1,6 @@
 // Splitwise API client (OAuth 2.0 + REST).
 //
-// Verified facts (see plans/phase-2-oauth.md):
+// Verified facts:
 // - Token exchange is POST, application/x-www-form-urlencoded, params in the
 //   body (client_id/secret/code/redirect_uri/grant_type) — not JSON, not Basic auth.
 // - Observed token responses contain only access_token + token_type; refresh
@@ -112,7 +112,7 @@ export interface SplitwiseGroup {
   simplifiedDebts: Array<{ amount: string }>;
 }
 
-export async function fetchGroups(
+async function fetchGroups(
   accessToken: string,
   fetchImpl: typeof fetch = fetch,
 ): Promise<SplitwiseGroup[]> {
@@ -205,10 +205,9 @@ export interface RawGroup {
   coverUrl?: string;
   members: Array<{ id: string; firstName: string; lastName: string }>;
   simplifiedDebts: Array<{ from: string; to: string; amount: string; currencyCode: string }>;
-  raw?: unknown; // kept for debugging; never persisted/rendered
 }
 
-export async function fetchGroup(
+async function fetchGroup(
   accessToken: string,
   groupId: string,
   fetchImpl: typeof fetch = fetch,
@@ -259,7 +258,6 @@ export async function fetchGroup(
         amount: String(d.amount ?? ""),
         currencyCode: String(d.currency_code ?? ""),
       })),
-    raw: group,
   };
 }
 
@@ -300,7 +298,7 @@ export async function fetchCurrentUser(
   };
 }
 
-// ---- Client interface (MVC refactor phase 02.5) ------------------------------
+// ---- Client interface --------------------------------------------------------
 // Domain services depend on narrow structural slices of this interface (e.g.
 // Pick<SplitwiseClient, "fetchGroup">), so unit tests can pass partial fakes.
 

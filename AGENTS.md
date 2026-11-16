@@ -15,8 +15,10 @@ log is the changelog.
   privacy model, license (LGPL-3.0-only).
 - **`SUPPORT.md`** — user support, FAQ, report/takedown flow.
 - **`.github/workflows/`** — `ci.yml` (typecheck + tests on PRs/main, Dependabot
-  auto-merge), `release-prep.yml` (version bump → tag → pipeline), `release.yml`
-  (checks → Cloudflare deploy → GitHub Release → `prod` deployment record),
+  auto-merge), `secrets.yml` (betterleaks history scan; local twin is
+  `.githooks/pre-commit`, installed by `npm run hooks:install`), `release-prep.yml` (version bump → tag → pipeline), `release.yml`
+  (checks → remote D1 migrations → Cloudflare deploy → GitHub Release → `prod`
+  deployment record; migrations must stay backward compatible with the live code),
   `verify-lockfile.yml` (GitHub Actions are SHA-locked; run `gh actions-lock`
   after adding/changing an action).
 
@@ -52,9 +54,11 @@ vitest with the Cloudflare workers plugin. Tests live by layer in
 
 ## Gotchas
 
-- **hono/jsx escapes string children**: inline `<script>`/`<style>` content MUST
-  go through `dangerouslySetInnerHTML` / unquoted CSS (`src/ui/dashboardPage.tsx`,
-  `src/ui/styles.ts`).
+- **hono/jsx escapes string children**: inline `<style>` content MUST be
+  unquoted CSS (`src/ui/styles.ts`).
+- **CSP forbids inline scripts** (`src/middleware/securityHeaders.ts`): client
+  JS is served as a same-origin asset (`src/ui/shareScript.ts` →
+  `/share.js`). New external origins (images, fonts) need a CSP update.
 - **DOCTYPE is not automatic**: PageShell emits it via `raw()`.
 - **Hono composition is registration-ordered**: middleware (i18n, rate limits,
   sessions) must be registered before the routes that depend on them
@@ -65,7 +69,8 @@ vitest with the Cloudflare workers plugin. Tests live by layer in
   into `null`.
 - **Sign sessions with the stored row id**: always create/login users through
   `UsersRepo.upsert` (`src/repositories/usersRepo.ts`) — a freshly generated
-  UUID would create sessions pointing at a nonexistent user.
+  UUID would create sessions pointing at a nonexistent user. Sessions also
+  carry `users.session_version` (`sv`); logout bumps it to revoke them.
 - **OG rendering** (`src/controllers/og.tsx`, `exampleCard.tsx`) requires
   `cache.setExecutionContext()` before the first render or it crashes.
 - **satori advisory accepted** (GHSA-wx4j-mvgx-mqwp, fixed in satori 0.33.5 —
@@ -78,6 +83,10 @@ vitest with the Cloudflare workers plugin. Tests live by layer in
   design source). After artwork changes run `node scripts/generate-icons.mjs`
   (regenerates the committed apple-touch PNG via `@cf-wasm/resvg`, already in
   the dependency tree). Favicon routes: `src/controllers/assets.tsx`.
+- **Fonts are self-hosted** (`assets/fonts/`, OFL licenses alongside): after
+  changing a WOFF2 file run `node scripts/generate-fonts.mjs` to regenerate
+  `src/ui/fontAssets.ts` (served at `/fonts/*`, `@font-face` in `APP_STYLE`).
+  Don't reintroduce a font CDN — it would leak visitor IPs and need CSP changes.
 - **Tests**: pin clocks explicitly in freshness/boundary assertions — never rely
   on the default wall clock. Never run two `npm test` instances at once (shared
   `.wrangler` state causes phantom failures). Migrations are auto-applied in

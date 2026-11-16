@@ -1,6 +1,6 @@
 import { env } from "cloudflare:workers";
 import { encrypt } from "../../src/lib/crypto";
-import { upsertUser } from "../../src/lib/users";
+import { D1UsersRepo } from "../../src/repositories/usersRepo";
 import { describe, expect, it } from "vitest";
 
 // D1 schema smoke test: the migration was applied by test/apply-migrations.ts.
@@ -13,13 +13,13 @@ describe("d1 schema", () => {
 		const key = env.TOKEN_ENCRYPTION_KEY;
 		const enc = await encrypt("token-v1", key);
 
-		const first = await upsertUser(env, {
+		const first = await new D1UsersRepo(env).upsert({
 			splitwiseUserId: splitwiseId,
 			encryptedAccessToken: enc,
 			encryptedRefreshToken: enc,
 			tokenExpiry: null,
 		});
-		const second = await upsertUser(env, {
+		const second = await new D1UsersRepo(env).upsert({
 			splitwiseUserId: splitwiseId,
 			encryptedAccessToken: enc,
 			encryptedRefreshToken: enc,
@@ -41,7 +41,7 @@ describe("d1 schema", () => {
 
 		// New tokens (a fresh OAuth grant) must overwrite the old ones.
 		const fresh = await encrypt("token-v2", key);
-		await upsertUser(env, {
+		await new D1UsersRepo(env).upsert({
 			splitwiseUserId: splitwiseId,
 			encryptedAccessToken: fresh,
 			encryptedRefreshToken: enc,

@@ -2,8 +2,7 @@ import { describe, expect, it } from "vitest";
 import { resolveFlash } from "../../src/domain/flashService";
 
 // Unit tests for flash resolution: query params → localized text, with the
-// param→dict-key mapping made explicit (this mapping was implicit and broken
-// before the MVC refactor — see the phase 02.9 commit note).
+// param→dict-key mapping made explicit.
 
 describe("resolveFlash", () => {
   it("maps success params to EN text", () => {

@@ -13,6 +13,7 @@ CLI is a local dependency).
 
 ```bash
 npm run setup-local   # .dev.vars with fresh keys + local D1 schema (idempotent)
+npm run hooks:install # pre-commit secret scan (needs betterleaks: brew install betterleaks)
 npm run dev           # http://localhost:8787
 npm test              # vitest with the Cloudflare Workers pool
 npx tsc -p tsconfig.json && npx tsc -p test/tsconfig.json
@@ -58,7 +59,9 @@ repositories/clients via parameters. Presentation never calls services.
 
 - **Privacy is the core feature.** Public content may only ever originate from
   sanitized snapshots (`src/domain/sanitizeService.ts`): first name + last initial, no
-  emails/ids/avatars/invite links. If you add a feature, add a test that scans
+  emails/ids/avatars/invite links. Splitwise's `first_name` is free text and is
+  never trusted verbatim (first word only; email-like or letterless values
+  render as "Someone"). If you add a feature, add a test that scans
   the output for sensitive strings.
 - **All Cloudflare resources must be created with `jurisdiction: eu`** — this is a
   project compliance requirement. Concretely: `wrangler d1 create splitviewer --jurisdiction eu`
@@ -77,6 +80,13 @@ repositories/clients via parameters. Presentation never calls services.
   and its OG image 404 immediately (and drops the cache row); OG meta tags render on
   bare GET (no JS) and `/p/:slug/og.png` returns a 1200×630 PNG — verify with
   `curl -A "Twitterbot/1.0"`.
+- **Security headers.** Every response carries a CSP
+  (`src/middleware/securityHeaders.ts`): same-origin scripts only, so client JS
+  ships as a static asset (`/share.js`), never inline. `hono/csrf` rejects
+  cross-origin form posts (tests posting forms must send a same-origin `Origin`).
+- **Session revocation.** Sessions embed `users.session_version` (`sv` claim);
+  `POST /auth/logout` bumps it, revoking every outstanding session for that user.
+  Everything behind `requireSession` is served `Cache-Control: private, no-store`.
 - **Tests by layer.** New service logic gets a *unit* test against the in-memory
   fakes (`test/fakes/`); HTTP behavior gets an *integration* test through the worker
   (`test/integration/`); D1/crypto guarantees stay in `test/infra/`.
@@ -109,7 +119,8 @@ repositories/clients via parameters. Presentation never calls services.
 1. Fork / branch (`feat/...` or `fix/...`).
 2. Make the change; add or update tests; keep typecheck + tests green.
 3. Open a PR against `main` — GitHub Actions runs typecheck + tests on every PR
-   and on `main` (`.github/workflows/ci.yml`).
+   and on `main` (`.github/workflows/ci.yml`), plus a secret scan
+   (`.github/workflows/secrets.yml`).
 
 ## CI & release
 
@@ -117,16 +128,44 @@ repositories/clients via parameters. Presentation never calls services.
   typechecks + the full vitest suite. No secrets required — the workflow seeds
   `wrangler.jsonc` from the committed template and generates throwaway keys for
   `.dev.vars` (`bash scripts/setup-local.sh --yes`).
+- **Secret scan** (`.github/workflows/secrets.yml`): every PR and push to `main`
+  scans the full git history with [betterleaks](https://github.com/betterleaks/betterleaks)
+  (pinned release, SHA-256 verified, findings redacted in the log). The same
+  check runs locally on staged changes via the `.githooks/pre-commit` hook
+  (`npm run hooks:install` links it into `.git/hooks` without touching
+  `core.hooksPath`; the hook skips with a warning if betterleaks isn't
+  installed). For a false positive, add a `betterleaks:allow` comment on the
+  line. To bump betterleaks, update `BETTERLEAKS_VERSION` and
+  `BETTERLEAKS_SHA256` in the workflow (Dependabot doesn't track it).
 - **Release** (`.github/workflows/release.yml`): pushing a tag `v*` runs the same
-  checks, then deploys to Cloudflare Workers **and records a `prod` deployment in
+  checks, applies pending D1 migrations to production
+  (`wrangler d1 migrations apply DB --remote`), then deploys to Cloudflare
+  Workers **and records a `prod` deployment in
   the repo's Deployments view**, plus publishes a **GitHub Release** with generated
   notes. Requires these **repository secrets**:
   | Secret | Value |
   |---|---|
-  | `CLOUDFLARE_API_TOKEN` | API token with Workers Scripts:Edit (+ D1:Edit); create at dash.cloudflare.com → My Profile → API Tokens |
+  | `CLOUDFLARE_API_TOKEN` | API token with Workers Scripts:Edit + D1:Edit (D1 for the migrations step); create at dash.cloudflare.com → My Profile → API Tokens |
   | `D1_DATABASE_ID` | the `database_id` of your production splitviewer D1 |
   | `SPLITWISE_CLIENT_ID` | your PROD Splitwise OAuth app's client id |
   | `CLOUDFLARE_ACCOUNT_ID` | *(optional)* needed only if the API token can access multiple accounts |
+
+  **Migrations must be backward compatible.** They run *before* the new code
+  ships, so the previous release keeps serving against the new schema for a
+  moment (and stays live if the deploy then fails). "Additive" is not
+  automatically safe: before writing a migration, check the SQL of the release
+  that is currently live (`src/repositories/`) against the new schema.
+  - New columns must be nullable or have a `DEFAULT` — otherwise the live
+    code's INSERTs fail.
+  - Keep explicit column lists in every `INSERT` and `SELECT` (the repos do
+    today). A positional `INSERT INTO t VALUES (...)` breaks as soon as a
+    column is added, and `SELECT *` silently changes the row shape.
+  - New constraints (`NOT NULL`, `UNIQUE`, `CHECK`, new unique indexes) can
+    reject writes the live code still makes.
+  - Drop or rename in a later release, once no deployed code uses the old
+    shape.
+
+  A failing migration aborts the release before deploy.
 
   The worker's secrets (`TOKEN_ENCRYPTION_KEY`, `SESSION_SECRET`,
   `SPLITWISE_CLIENT_SECRET`) are **not** touched by deploys — set them once with
@@ -170,8 +209,9 @@ repositories/clients via parameters. Presentation never calls services.
   GitHub-Actions bumps individually — every PR is validated by CI. Watch the
   coupled pair `wrangler` + `@cloudflare/vitest-plugin` and the wasm modules
   (`@cf-wasm/*`) on major bumps. Dependabot PRs are **auto-merged with squash**
-  once CI is green (`fastify/github-action-merge-dependabot`, target `minor` —
-  majors always need manual review). This requires the repo setting
+  once CI is green (`fastify/github-action-merge-dependabot`): patch bumps
+  for everything, minor bumps for devDependencies only — runtime minors and
+  all majors need manual review. This requires the repo setting
   **Settings → Actions → General → "Allow GitHub Actions to create and approve
   pull requests"** to stay on (the action approves before merging; GITHUB_TOKEN
   is blocked from approving PRs otherwise).
@@ -180,6 +220,7 @@ repositories/clients via parameters. Presentation never calls services.
 
 ## Reporting bugs / security
 
-Open an issue at https://github.com/panz3r/splitviewer/issues. For anything you'd
-consider sensitive (e.g. a data-leak path), please say so in the issue title —
-the app holds no plaintext secrets, but we still treat leak reports as urgent.
+Bugs: open an issue at https://github.com/panz3r/splitviewer/issues.
+Security vulnerabilities, data-leak paths, takedown requests, and privacy
+concerns must be reported **privately** — see [SECURITY.md](SECURITY.md). Never
+post a share link in a public issue.

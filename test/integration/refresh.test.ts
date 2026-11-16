@@ -1,7 +1,8 @@
 import { env } from "cloudflare:workers";
 import { describe, expect, it } from "vitest";
 import { encrypt, decrypt } from "../../src/lib/crypto";
-import { refreshUserToken, upsertUser } from "../../src/lib/users";
+import { D1UsersRepo } from "../../src/repositories/usersRepo";
+import { refreshUserTokenForEnv as refreshUserToken } from "../../src/wiring";
 
 // Token refresh flow. Splitwise's REAL observed token responses carry no
 // refresh_token, so the common path is refreshUserToken → false with zero
@@ -101,13 +102,13 @@ describe("upsertUser (regression guard)", () => {
   it("still returns the stored id across re-logins", async () => {
     const splitwiseId = `stable-${crypto.randomUUID().slice(0, 6)}`;
     const enc = await encrypt("t", env.TOKEN_ENCRYPTION_KEY);
-    const a = await upsertUser(env, {
+    const a = await new D1UsersRepo(env).upsert({
       splitwiseUserId: splitwiseId,
       encryptedAccessToken: enc,
       encryptedRefreshToken: enc,
       tokenExpiry: null,
     });
-    const b = await upsertUser(env, {
+    const b = await new D1UsersRepo(env).upsert({
       splitwiseUserId: splitwiseId,
       encryptedAccessToken: enc,
       encryptedRefreshToken: enc,

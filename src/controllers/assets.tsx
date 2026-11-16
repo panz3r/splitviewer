@@ -1,9 +1,12 @@
-// Static icon assets: /icon.svg (favicon), /favicon.ico (redirect shim for
+// Static assets: /icon.svg (favicon), /favicon.ico (redirect shim for
 // anything hardcoding the legacy path), /apple-touch-icon.png (iOS home
-// screen). All immutable-ish and JS-free.
+// screen), self-hosted fonts (/fonts/*.woff2), and the dashboard share script (/share.js — external because the
+// CSP blocks inline scripts).
 import { Hono } from "hono";
 import { ICON_SVG } from "../ui/icon";
 import { APPLE_TOUCH_ICON_180_PNG_BASE64 } from "../ui/iconAssets";
+import { FONT_FILES } from "../ui/fontAssets";
+import { SHARE_SCRIPT, SHARE_SCRIPT_PATH } from "../ui/shareScript";
 import type { AppEnv } from "../types";
 
 /** atob() returns a latin-1 string; body() would re-encode it as UTF-8 and
@@ -30,10 +33,28 @@ export const assetsRoutes = new Hono<AppEnv>()
   .get("/favicon.ico", (c) =>
     c.redirect("/icon.svg", 302))
 
-  .get("/apple-touch-icon.png", (c) =>
+  .get(SHARE_SCRIPT_PATH, (c) =>
+    c.body(SHARE_SCRIPT, 200, {
+      "Content-Type": "text/javascript; charset=utf-8",
+      "Cache-Control": "public, max-age=3600",
+    }))
+
+  .get("/apple-touch-icon.png", () =>
     new Response(base64ToBytes(APPLE_TOUCH_ICON_180_PNG_BASE64), {
       headers: {
         "Content-Type": "image/png",
         "Cache-Control": "public, max-age=604800",
       },
-    }));
+    }))
+
+  .get("/fonts/:file", (c) => {
+    const file = c.req.param("file");
+    const b64 = Object.hasOwn(FONT_FILES, file) ? FONT_FILES[file] : undefined;
+    if (!b64) return c.notFound();
+    return new Response(base64ToBytes(b64), {
+      headers: {
+        "Content-Type": "font/woff2",
+        "Cache-Control": "public, max-age=2592000",
+      },
+    });
+  });
