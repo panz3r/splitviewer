@@ -37,8 +37,6 @@ export const ogImage = new Hono<AppEnv>()
     // the PNG; the URL itself is never rendered). Any failure degrades to the
     // plain charcoal card.
     const coverImage = await coverToDataUri(view.snapshot.coverUrl);
-    // TEMPORARY diagnostic (remove before merging)
-    c.header("X-Cover-Debug", `len=${coverImage?.length ?? "null"} head=${(coverImage ?? "").slice(0, 30)}`);
 
     // Required by @cf-wasm/og in workerd (getExecutionContext crashes otherwise).
     cache.setExecutionContext(c.executionCtx);
