@@ -4,14 +4,11 @@ import type { FC } from "hono/jsx";
 import { raw } from "hono/html";
 import { APP_STYLE } from "./styles";
 import { getDict, type Lang } from "../i18n";
-import { DEFAULT_REPO_URL, repoLinks } from "../lib/links";
+import { repoLinks } from "../lib/links";
 import { LogoIcon } from "./icon";
-
-export { DEFAULT_REPO_URL };
 
 /** PageShell footer links come from the configured repo (REPO_URL wrangler var). */
 export { repoLinks } from "../lib/links";
-export type { RepoLinks } from "../lib/links";
 
 export interface PageShellProps {
   title: string;
@@ -176,13 +173,9 @@ export function Flash({ msg, err }: { msg?: string; err?: string }) {
   return <p class={`flash${err ? " flash--err" : ""}`}>{err ?? msg}</p>;
 }
 
-export function Badge({ on }: { on: boolean }) {
-  return <span class={`badge ${on ? "" : "badge--off"}`}>{on ? "public" : "off"}</span>;
-}
-
 /** Tiny inline-SVG flags (Windows renders flag emoji as letter codes, so SVGs
  * are the reliable cross-platform choice). */
-export function FlagIcon({ lang }: { lang: Lang }) {
+function FlagIcon({ lang }: { lang: Lang }) {
   if (lang === "it") {
     return (
       <svg class="flag" viewBox="0 0 3 2" width="20" height="14" aria-hidden="true">

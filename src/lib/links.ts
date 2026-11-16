@@ -5,7 +5,7 @@
 // github.server_url/github.repository for CI deploys.
 
 /** Upstream repo — used when no REPO_URL var is configured. */
-export const DEFAULT_REPO_URL = "https://github.com/panz3r/splitviewer";
+const DEFAULT_REPO_URL = "https://github.com/panz3r/splitviewer";
 
 export interface RepoLinks {
   /** Repo root (project/roadmap links). */

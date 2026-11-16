@@ -4,11 +4,9 @@
 import { Hono } from "hono";
 import type { Context } from "hono";
 import { requireSession } from "../middleware/session";
-import { shareServiceForEnv, SLUG_LENGTH } from "../wiring";
+import { shareServiceForEnv } from "../wiring";
 import type { Lang } from "../i18n";
 import type { AppEnv } from "../types";
-
-export { SLUG_LENGTH };
 
 function isJson(c: Context): boolean {
   return (c.req.header("content-type") ?? "").includes("application/json");

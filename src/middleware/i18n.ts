@@ -5,7 +5,7 @@ import type { Context, Next } from "hono";
 import type { AppEnv } from "../types";
 import type { Lang } from "../i18n";
 
-export function requestLang(c: Context<AppEnv>): Lang {
+function requestLang(c: Context<AppEnv>): Lang {
   const path = c.req.path;
   return path === "/it" || path.startsWith("/it/") ? "it" : "en";
 }

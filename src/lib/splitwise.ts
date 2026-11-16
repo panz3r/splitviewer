@@ -112,7 +112,7 @@ export interface SplitwiseGroup {
   simplifiedDebts: Array<{ amount: string }>;
 }
 
-export async function fetchGroups(
+async function fetchGroups(
   accessToken: string,
   fetchImpl: typeof fetch = fetch,
 ): Promise<SplitwiseGroup[]> {
@@ -208,7 +208,7 @@ export interface RawGroup {
   raw?: unknown; // kept for debugging; never persisted/rendered
 }
 
-export async function fetchGroup(
+async function fetchGroup(
   accessToken: string,
   groupId: string,
   fetchImpl: typeof fetch = fetch,

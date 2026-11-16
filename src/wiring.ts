@@ -11,8 +11,6 @@ import { createShareService, SLUG_LENGTH } from "./domain/shareService";
 import { createTokenService } from "./domain/tokenService";
 import { nanoid } from "nanoid";
 
-export { SLUG_LENGTH };
-
 /** Resolved repo URL for in-app report/project links (REPO_URL var or upstream default). */
 export function repoUrl(env: CloudflareBindings): string {
   return repoUrlFromEnv(env);
@@ -38,15 +36,7 @@ export function refreshUserTokenForEnv(
   )(user);
 }
 
-/** Decrypts a user's stored Splitwise access token for live API calls. */
-export function decAccessToken(
-  user: { encrypted_access_token: string },
-  env: CloudflareBindings,
-): Promise<string> {
-  return decrypt(user.encrypted_access_token, env.TOKEN_ENCRYPTION_KEY);
-}
-
-export function publicViewDepsForEnv(
+function publicViewDepsForEnv(
   env: CloudflareBindings,
   fetchImpl: typeof fetch = fetch,
 ): PublicViewDeps {
