@@ -10,6 +10,8 @@ import { Hono } from "hono";
 import type { Context } from "hono";
 import { deleteCookie, getCookie, setCookie } from "hono/cookie";
 import { decrypt, encrypt } from "../lib/crypto";
+import { getSessionPayload } from "../middleware/session";
+import { D1UsersRepo } from "../repositories/usersRepo";
 import {
   SESSION_COOKIE,
   STATE_COOKIE,
@@ -132,12 +134,24 @@ export const auth = new Hono<AppEnv>()
     // keeps the existing row (and its id); signing a freshly generated UUID
     // would create a session that references a nonexistent user, making every
     // re-login bounce into the authorize loop.
-    const session = await signSession(storedUserId, c.env.SESSION_SECRET);
+    const storedUser = await new D1UsersRepo(c.env).byId(storedUserId);
+    const session = await signSession(
+      storedUserId,
+      c.env.SESSION_SECRET,
+      storedUser?.session_version ?? 0,
+    );
     setCookie(c, SESSION_COOKIE, session, { ...cookieFlags(c), maxAge: 2592000 });
     return c.redirect("/dashboard", 302);
   })
 
-  .on(["GET", "POST"], "/auth/logout", (c) => {
+  // POST-only (SameSite=Lax keeps cross-site forms from logging users out).
+  // Logout revokes every outstanding session of the user server-side, so a
+  // copied/stolen cookie stops working too.
+  .post("/auth/logout", async (c) => {
+    const session = await getSessionPayload(c);
+    if (session) {
+      await new D1UsersRepo(c.env).revokeSessions(session.userId);
+    }
     deleteCookie(c, SESSION_COOKIE, { ...cookieFlags(c), maxAge: 0 });
     return c.redirect("/", 302);
   });

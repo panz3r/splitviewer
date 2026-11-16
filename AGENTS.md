@@ -67,7 +67,8 @@ vitest with the Cloudflare workers plugin. Tests live by layer in
   into `null`.
 - **Sign sessions with the stored row id**: always create/login users through
   `UsersRepo.upsert` (`src/repositories/usersRepo.ts`) — a freshly generated
-  UUID would create sessions pointing at a nonexistent user.
+  UUID would create sessions pointing at a nonexistent user. Sessions also
+  carry `users.session_version` (`sv`); logout bumps it to revoke them.
 - **OG rendering** (`src/controllers/og.tsx`, `exampleCard.tsx`) requires
   `cache.setExecutionContext()` before the first render or it crashes.
 - **satori advisory accepted** (GHSA-wx4j-mvgx-mqwp, fixed in satori 0.33.5 —

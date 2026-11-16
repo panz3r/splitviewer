@@ -38,6 +38,8 @@ export interface UsersRepo {
   encryptedRefreshToken(id: string): Promise<string | null>;
   /** Persists rotated tokens, encrypting them with the environment key. */
   storeTokens(userId: string, tokens: StoredTokens): Promise<void>;
+  /** Invalidates every outstanding session for the user (bumps session_version). */
+  revokeSessions(userId: string): Promise<void>;
 }
 
 // ---- D1 implementation -------------------------------------------------------
@@ -80,7 +82,7 @@ export class D1UsersRepo implements UsersRepo {
 
   async byId(id: string): Promise<UserRow | null> {
     const row = await this.env.DB.prepare(
-      "SELECT id, splitwise_user_id, encrypted_access_token, token_expiry, avatar_url, first_name FROM users WHERE id = ?1",
+      "SELECT id, splitwise_user_id, encrypted_access_token, token_expiry, avatar_url, first_name, session_version FROM users WHERE id = ?1",
     )
       .bind(id)
       .first<UserRow>();
@@ -108,6 +110,14 @@ export class D1UsersRepo implements UsersRepo {
       .bind(encAccess, encRefresh, tokens.expiresAt, userId)
       .run();
   }
+
+  async revokeSessions(userId: string): Promise<void> {
+    await this.env.DB.prepare(
+      "UPDATE users SET session_version = session_version + 1, updated_at = unixepoch() WHERE id = ?1",
+    )
+      .bind(userId)
+      .run();
+  }
 }
 
 // ---- In-memory implementation (unit tests) -----------------------------------
@@ -116,7 +126,7 @@ export class InMemoryUsersRepo implements UsersRepo {
   /** Plaintext storage by design: unit tests inject their own crypto checks. */
   readonly rows = new Map<
     string,
-    { id: string; splitwiseUserId: string; accessToken: string; refreshToken: string; expiresAt: number | null }
+    { id: string; splitwiseUserId: string; accessToken: string; refreshToken: string; expiresAt: number | null; sessionVersion: number }
   >();
 
   private nextId = 0;
@@ -138,6 +148,7 @@ export class InMemoryUsersRepo implements UsersRepo {
       accessToken: input.encryptedAccessToken,
       refreshToken: input.encryptedRefreshToken,
       expiresAt: input.tokenExpiry,
+      sessionVersion: 0,
     });
     return id;
   }
@@ -152,6 +163,7 @@ export class InMemoryUsersRepo implements UsersRepo {
       token_expiry: row.expiresAt,
       avatar_url: null,
       first_name: null,
+      session_version: row.sessionVersion,
     };
   }
 
@@ -166,5 +178,10 @@ export class InMemoryUsersRepo implements UsersRepo {
       row.refreshToken = tokens.refreshToken;
       row.expiresAt = tokens.expiresAt;
     }
+  }
+
+  async revokeSessions(userId: string): Promise<void> {
+    const row = this.rows.get(userId);
+    if (row) row.sessionVersion += 1;
   }
 }

@@ -32,6 +32,7 @@ const USER: UserRow = {
   token_expiry: null,
   avatar_url: null,
   first_name: "Ada",
+  session_version: 0,
 };
 
 function share(groupId: string, active: boolean) {

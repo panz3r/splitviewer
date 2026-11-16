@@ -80,6 +80,8 @@ repositories/clients via parameters. Presentation never calls services.
 - **Security headers.** Every response carries a CSP
   (`src/middleware/securityHeaders.ts`): same-origin scripts only, so client JS
   ships as a static asset (`/share.js`), never inline.
+- **Session revocation.** Sessions embed `users.session_version` (`sv` claim);
+  `POST /auth/logout` bumps it, revoking every outstanding session for that user.
 - **Tests by layer.** New service logic gets a *unit* test against the in-memory
   fakes (`test/fakes/`); HTTP behavior gets an *integration* test through the worker
   (`test/integration/`); D1/crypto guarantees stay in `test/infra/`.
