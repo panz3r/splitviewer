@@ -14,6 +14,8 @@ export interface RepoLinks {
   issues: string;
   /** Guided report form (in-app "Report an issue" links). */
   report: string;
+  /** Private report (GitHub private vulnerability reporting): takedowns + privacy. */
+  privateReport: string;
 }
 
 export function repoLinks(repoUrl: string = DEFAULT_REPO_URL): RepoLinks {
@@ -21,6 +23,7 @@ export function repoLinks(repoUrl: string = DEFAULT_REPO_URL): RepoLinks {
     repo: repoUrl,
     issues: `${repoUrl}/issues`,
     report: `${repoUrl}/issues/new?template=report.yml`,
+    privateReport: `${repoUrl}/security/advisories/new`,
   };
 }
 

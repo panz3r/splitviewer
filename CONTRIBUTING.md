@@ -180,6 +180,7 @@ repositories/clients via parameters. Presentation never calls services.
 
 ## Reporting bugs / security
 
-Open an issue at https://github.com/panz3r/splitviewer/issues. For anything you'd
-consider sensitive (e.g. a data-leak path), please say so in the issue title —
-the app holds no plaintext secrets, but we still treat leak reports as urgent.
+Bugs: open an issue at https://github.com/panz3r/splitviewer/issues.
+Security vulnerabilities, data-leak paths, takedown requests, and privacy
+concerns must be reported **privately** — see [SECURITY.md](SECURITY.md). Never
+post a share link in a public issue.

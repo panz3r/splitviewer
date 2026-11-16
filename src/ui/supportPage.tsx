@@ -67,6 +67,13 @@ export function supportPage(props: { lang: Lang; origin: string; repoUrl?: strin
           <h2 style="margin-top: 0;">{t.support.reportTitle}</h2>
           <p>
             {t.support.reportBody}{" "}
+            <a href={links.privateReport} target="_blank" rel="noopener">
+              {t.support.reportPrivateLink}
+            </a>
+            .
+          </p>
+          <p>
+            {t.support.reportBugsBody}{" "}
             <a href={links.report} target="_blank" rel="noopener">
               {t.nav.reportIssue}
             </a>

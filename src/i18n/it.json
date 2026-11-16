@@ -70,7 +70,9 @@
     "q8": "Dove sono conservati i dati?",
     "a8": "In un database Cloudflare D1 limitato alla giurisdizione dell'Unione Europea (incluse le regioni di archiviazione europee).",
     "reportTitle": "Segnala un problema o richiedi la rimozione",
-    "reportBody": "Trovato un link che non dovrebbe essere pubblico, un bug o qualcos'altro? Apri una issue su GitHub. I proprietari di una condivisione possono comunque revocare istantaneamente dalla propria dashboard.",
+    "reportBody": "Hai trovato un link che non dovrebbe essere pubblico, o hai un dubbio sulla privacy? Segnalalo in privato: non pubblicare mai un link di condivisione in una issue pubblica. I proprietari di una condivisione possono comunque revocare istantaneamente dalla propria dashboard.",
+    "reportPrivateLink": "Segnala in privato",
+    "reportBugsBody": "Bug e tutto il resto:",
     "projectTitle": "Progetto e roadmap",
     "projectBody": "Vuoi aiutare? Consulta la guida per i contributor. Sulla roadmap: rifinitura della dashboard, supporto multilingua (a partire dall'italiano) e funzionalità di gestione dei link.",
     "yourDashboard": "la tua dashboard"

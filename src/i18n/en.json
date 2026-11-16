@@ -70,7 +70,9 @@
     "q8": "Where is the data stored?",
     "a8": "In a Cloudflare D1 database restricted to European Union jurisdiction (including Europe-only storage regions).",
     "reportTitle": "Report a problem or request a takedown",
-    "reportBody": "Found a link that shouldn’t be public, a bug, or anything else wrong? Please open an issue on GitHub. Share owners can always revoke instantly themselves from the dashboard.",
+    "reportBody": "Found a link that shouldn’t be public, or a privacy concern? Report it privately — never post a share link in a public issue. Share owners can always revoke instantly themselves from the dashboard.",
+    "reportPrivateLink": "Report privately",
+    "reportBugsBody": "Bugs and anything else:",
     "projectTitle": "Project & roadmap",
     "projectBody": "Want to help? See the contributing guide. Currently on the roadmap: dashboard UX polish, multi-language support (starting with Italian), and long-term link management features.",
     "yourDashboard": "your dashboard"

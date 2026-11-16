@@ -1,5 +1,8 @@
 blank_issues_enabled: false
 contact_links:
+  - name: Takedown request / privacy concern / security vulnerability (private)
+    url: https://github.com/panz3r/splitviewer/security/advisories/new
+    about: Report privately — never post a share link in a public issue. See SECURITY.md.
   - name: Questions & FAQ
     url: https://splitviewer.mattiapanzeri.workers.dev/support
     about: How SplitViewer works, what is shown publicly, self-hosting, and the FAQ

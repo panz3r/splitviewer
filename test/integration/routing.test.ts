@@ -42,6 +42,8 @@ describe("src/index.tsx", () => {
 		expect(text).toContain("FAQ");
 		expect(text).toContain("takedown");
 		expect(text).toContain("github.com/panz3r/splitviewer/issues");
+		// takedowns/privacy go to the private channel, never public issues
+		expect(text).toContain("github.com/panz3r/splitviewer/security/advisories/new");
 	});
 
 	it("report links follow the REPO_URL var (self-hosted forks report to their own tracker)", async () => {
