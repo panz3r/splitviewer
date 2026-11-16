@@ -175,8 +175,9 @@ repositories/clients via parameters. Presentation never calls services.
   GitHub-Actions bumps individually — every PR is validated by CI. Watch the
   coupled pair `wrangler` + `@cloudflare/vitest-plugin` and the wasm modules
   (`@cf-wasm/*`) on major bumps. Dependabot PRs are **auto-merged with squash**
-  once CI is green (`fastify/github-action-merge-dependabot`, target `minor` —
-  majors always need manual review). This requires the repo setting
+  once CI is green (`fastify/github-action-merge-dependabot`): patch bumps
+  for everything, minor bumps for devDependencies only — runtime minors and
+  all majors need manual review. This requires the repo setting
   **Settings → Actions → General → "Allow GitHub Actions to create and approve
   pull requests"** to stay on (the action approves before merging; GITHUB_TOKEN
   is blocked from approving PRs otherwise).

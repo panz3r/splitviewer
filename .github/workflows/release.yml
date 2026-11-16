@@ -7,15 +7,17 @@ on:
   # package.json (GITHUB_TOKEN tag pushes don't trigger `on: push`).
   workflow_dispatch:
 
+# Least privilege: read-only by default; only the deploy job gets write scopes.
 permissions:
-  contents: write # GitHub Releases
-  deployments: write # prod deployment records
+  contents: read
 
 jobs:
   checks:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
 
       - uses: actions/setup-node@v7.1.0
         with:
@@ -45,16 +47,26 @@ jobs:
     # The `prod` environment powers the repo's Environments/Deployments UI and
     # can carry protection rules (required reviewers, wait timers).
     environment: prod
+    permissions:
+      contents: write # GitHub Releases + package.json sync push
+      deployments: write # prod deployment records
     steps:
+      # No persisted git credentials: only the final sync step pushes, and it
+      # authenticates explicitly.
       - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
 
       - uses: actions/setup-node@v7.1.0
         with:
           node-version: 24
           cache: npm
 
+      # --ignore-scripts: dependency lifecycle scripts never run in the job
+      # that holds the Cloudflare token and a write-scoped GITHUB_TOKEN (the
+      # checks job above already ran the full install + tests).
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --ignore-scripts
 
       # wrangler.jsonc is gitignored by design — rebuild it for CI from the
       # committed template + repository secrets (deployment-specific values).
@@ -140,6 +152,7 @@ jobs:
         if: success()
         env:
           VERSION: ${{ github.ref_name }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           VERSION="${VERSION#v}"
           CURRENT="$(node -p "require('./package.json').version")"
@@ -153,9 +166,9 @@ jobs:
             pkg.version = process.env.VERSION;
             fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
           "
-          npm install --package-lock-only
+          npm install --package-lock-only --ignore-scripts
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add package.json package-lock.json
           git commit -m "chore(release): sync package.json to v${VERSION}"
-          git push origin HEAD:main
+          git push "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" HEAD:main
