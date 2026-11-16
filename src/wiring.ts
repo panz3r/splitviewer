@@ -1,4 +1,4 @@
-// Composition helpers (MVC refactor): env-bound wiring that turns Cloudflare
+// Composition helpers: env-bound wiring that turns Cloudflare
 // bindings into domain services. Controllers call these — the domain layer
 // itself never sees `env`. Keep every service instantiation choice here so
 // there is exactly one place where env meets domain.

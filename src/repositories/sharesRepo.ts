@@ -1,4 +1,4 @@
-// Shares repository (MVC refactor phase 02.3): the ONLY module that touches
+// Shares repository: the ONLY module that touches
 // the `shares` table. Interface + D1 implementation + in-memory implementation.
 export interface UserShareRow {
   splitwise_group_id: string;

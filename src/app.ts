@@ -1,4 +1,4 @@
-// App composition root (MVC refactor phase 02.11). Builds the Hono app:
+// App composition root. Builds the Hono app:
 // public-route hardening (rate limits) BEFORE the route handlers — Hono
 // composes in registration order, so later uses would be dead code.
 // All routers live in controllers/; language is derived in middleware/i18n.

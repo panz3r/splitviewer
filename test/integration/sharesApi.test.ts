@@ -8,7 +8,7 @@ import type { UserRow } from "../../src/types";
 // Dashboard + shares API tests. These paths never call Splitwise outbound
 // (share endpoints are D1-only; the dashboard is only tested unauthenticated
 // here), so no network mocking is needed. Live dashboard rendering is verified
-// manually in the browser (see plans/phase-3-dashboard.md checklist).
+// manually in the browser.
 
 const IncomingRequest = Request<unknown, IncomingRequestCfProperties>;
 

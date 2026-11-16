@@ -1,4 +1,4 @@
-// Users repository (MVC refactor phase 02.2): the ONLY module that touches the
+// Users repository: the ONLY module that touches the
 // `users` table. Interface + D1 implementation + in-memory implementation.
 //
 // The D1 impl owns the encryption step for tokens-at-rest (behavior contract:

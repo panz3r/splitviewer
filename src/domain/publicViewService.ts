@@ -65,7 +65,7 @@ export function createPublicViewService(deps: PublicViewDeps) {
           return await deps.splitwise.fetchGroup(token, share.groupId);
         } catch (error) {
           // 401 → one automated token-refresh attempt then a single retry
-          // (upstream Phase 6). If refresh is impossible (no refresh token stored —
+          // If refresh is impossible (no refresh token stored —
           // the observed Splitwise behavior), fall through to the stale path below.
           if (!(error instanceof Error) || error.name !== "SplitwiseAuthError") throw error;
           const authError = error as { status?: number };
@@ -85,7 +85,7 @@ export function createPublicViewService(deps: PublicViewDeps) {
       await deps.cache.set(slug, snapshot, now);
       return { status: 200, xCache: "refetched", snapshot, asOfSeconds: now };
     } catch (error) {
-      // Graceful stale fallback (upstream plan §4) — even for token-expired owners.
+      // Graceful stale fallback — even for token-expired owners.
       if (cache) {
         return { status: 200, xCache: "stale", snapshot: cache.snapshot, asOfSeconds: cache.lastFetchedAt };
       }

@@ -1,4 +1,4 @@
-// Session middleware (MVC refactor phase 02.11): cookie reading + user
+// Session middleware: cookie reading + user
 // resolution on top of domain/sessionService and the users repository.
 // Unauthenticated API requests get 401 JSON; page routes get a 302 to /auth/login.
 import type { Context, Next } from "hono";

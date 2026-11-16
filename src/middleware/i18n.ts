@@ -1,4 +1,4 @@
-// Language middleware (MVC refactor phase 02.11): derives the request language
+// Language middleware: derives the request language
 // from the URL path so controllers never compute it. `/it` and `/it/*` are
 // Italian; everything else (including public dashboards) is English by design.
 import type { Context, Next } from "hono";

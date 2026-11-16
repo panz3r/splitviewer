@@ -5,7 +5,6 @@ import { describe, expect, it } from "vitest";
 import { D1CacheRepo, FRESH_WINDOW_SECONDS, isFresh } from "../../src/repositories/cacheRepo";
 
 import { sanitizeGroup, type RawGroupInput, type SanitizedSnapshot } from "../../src/domain/sanitizeService";
-
 const cacheRepo = new D1CacheRepo(env);
 const setCache = (slug: string, snapshot: SanitizedSnapshot, now = Math.floor(Date.now() / 1000)) =>
   cacheRepo.set(slug, snapshot, now);
@@ -14,7 +13,7 @@ const setCache = (slug: string, snapshot: SanitizedSnapshot, now = Math.floor(Da
 // mocked inside workerd, but these tests use a dummy encrypted token, so live
 // calls deterministically yield SplitwiseAuthError(401) — the graceful-stale
 // branch — regardless of network state. The success path ("refetched") is
-// verified live in the browser (plans/phase-4-public-view.md checklist).
+// verified live in the browser.
 
 const IncomingRequest = Request<unknown, IncomingRequestCfProperties>;
 

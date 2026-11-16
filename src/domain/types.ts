@@ -1,4 +1,4 @@
-// Domain DTOs (MVC refactor phase 02.1). Framework-agnostic shapes passed
+// Domain DTOs. Framework-agnostic shapes passed
 // between services and presentation; no Context, no D1 rows, no fetch types.
 import type { SanitizedSnapshot } from "./sanitizeService";
 import type { Lang } from "../i18n";
