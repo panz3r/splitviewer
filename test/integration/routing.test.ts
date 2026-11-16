@@ -46,6 +46,30 @@ describe("src/index.tsx", () => {
 		expect(text).toContain("github.com/panz3r/splitviewer/security/advisories/new");
 	});
 
+	it("sends security headers (CSP without inline scripts, no framing, no referrer)", async () => {
+		const request = new IncomingRequest("https://example.com/");
+		const ctx = createExecutionContext();
+		const response = await worker.fetch(request, env, ctx);
+		await waitOnExecutionContext(ctx);
+		const csp = response.headers.get("Content-Security-Policy") ?? "";
+		expect(csp).toContain("script-src 'self';");
+		expect(csp).toContain("frame-ancestors 'none'");
+		expect(response.headers.get("X-Frame-Options")).toBe("DENY");
+		expect(response.headers.get("X-Content-Type-Options")).toBe("nosniff");
+		expect(response.headers.get("Referrer-Policy")).toBe("no-referrer");
+		expect(response.headers.get("Strict-Transport-Security")).toContain("max-age=");
+	});
+
+	it("serves the dashboard share script as a same-origin asset", async () => {
+		const request = new IncomingRequest("https://example.com/share.js");
+		const ctx = createExecutionContext();
+		const response = await worker.fetch(request, env, ctx);
+		await waitOnExecutionContext(ctx);
+		expect(response.status).toBe(200);
+		expect(response.headers.get("Content-Type")).toContain("javascript");
+		expect(await response.text()).toContain("data-share");
+	});
+
 	it("report links follow the REPO_URL var (self-hosted forks report to their own tracker)", async () => {
 		const request = new IncomingRequest("http://example.com/support");
 		const ctx = createExecutionContext();

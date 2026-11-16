@@ -77,6 +77,9 @@ repositories/clients via parameters. Presentation never calls services.
   and its OG image 404 immediately (and drops the cache row); OG meta tags render on
   bare GET (no JS) and `/p/:slug/og.png` returns a 1200×630 PNG — verify with
   `curl -A "Twitterbot/1.0"`.
+- **Security headers.** Every response carries a CSP
+  (`src/middleware/securityHeaders.ts`): same-origin scripts only, so client JS
+  ships as a static asset (`/share.js`), never inline.
 - **Tests by layer.** New service logic gets a *unit* test against the in-memory
   fakes (`test/fakes/`); HTTP behavior gets an *integration* test through the worker
   (`test/integration/`); D1/crypto guarantees stay in `test/infra/`.

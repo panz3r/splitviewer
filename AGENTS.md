@@ -52,9 +52,11 @@ vitest with the Cloudflare workers plugin. Tests live by layer in
 
 ## Gotchas
 
-- **hono/jsx escapes string children**: inline `<script>`/`<style>` content MUST
-  go through `dangerouslySetInnerHTML` / unquoted CSS (`src/ui/dashboardPage.tsx`,
-  `src/ui/styles.ts`).
+- **hono/jsx escapes string children**: inline `<style>` content MUST be
+  unquoted CSS (`src/ui/styles.ts`).
+- **CSP forbids inline scripts** (`src/middleware/securityHeaders.ts`): client
+  JS is served as a same-origin asset (`src/ui/shareScript.ts` →
+  `/share.js`). New external origins (images, fonts) need a CSP update.
 - **DOCTYPE is not automatic**: PageShell emits it via `raw()`.
 - **Hono composition is registration-ordered**: middleware (i18n, rate limits,
   sessions) must be registered before the routes that depend on them

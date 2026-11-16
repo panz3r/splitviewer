@@ -16,10 +16,14 @@ import {
 import { assetsRoutes } from "./controllers/assets";
 import { ipRateLimit } from "./lib/ratelimit";
 import { langMiddleware } from "./middleware/i18n";
+import { securityHeaders } from "./middleware/securityHeaders";
 import type { AppEnv } from "./types";
 
 export function createApp(): Hono<AppEnv> {
   const app = new Hono<AppEnv>();
+
+  // Security headers wrap every response (including 404s and rate-limit hits).
+  app.use("*", securityHeaders);
 
   // Language derivation must run before any handler that reads c.get("lang").
   app.use("*", langMiddleware);
