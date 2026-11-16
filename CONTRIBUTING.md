@@ -152,10 +152,20 @@ repositories/clients via parameters. Presentation never calls services.
 
   **Migrations must be backward compatible.** They run *before* the new code
   ships, so the previous release keeps serving against the new schema for a
-  moment (and stays live if the deploy then fails). Only add tables/columns
-  (with defaults) or indexes; drop or rename in a later release, once no
-  deployed code uses the old shape. A failing migration aborts the release
-  before deploy.
+  moment (and stays live if the deploy then fails). "Additive" is not
+  automatically safe: before writing a migration, check the SQL of the release
+  that is currently live (`src/repositories/`) against the new schema.
+  - New columns must be nullable or have a `DEFAULT` — otherwise the live
+    code's INSERTs fail.
+  - Keep explicit column lists in every `INSERT` and `SELECT` (the repos do
+    today). A positional `INSERT INTO t VALUES (...)` breaks as soon as a
+    column is added, and `SELECT *` silently changes the row shape.
+  - New constraints (`NOT NULL`, `UNIQUE`, `CHECK`, new unique indexes) can
+    reject writes the live code still makes.
+  - Drop or rename in a later release, once no deployed code uses the old
+    shape.
+
+  A failing migration aborts the release before deploy.
 
   The worker's secrets (`TOKEN_ENCRYPTION_KEY`, `SESSION_SECRET`,
   `SPLITWISE_CLIENT_SECRET`) are **not** touched by deploys — set them once with

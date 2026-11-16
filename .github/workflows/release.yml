@@ -108,8 +108,8 @@ jobs:
 
       # Migrations run BEFORE the deploy: new code may depend on the new schema,
       # while the still-live old code must keep working against it — so
-      # migrations must stay backward compatible (additive; drop/rename only in
-      # a later release once no deployed code uses the old shape). Already
+      # migrations must stay backward compatible with the live release's SQL
+      # (see CONTRIBUTING.md "Migrations must be backward compatible"). Already
       # applied migrations are skipped (tracked in the d1_migrations table); a
       # failing migration aborts the release before any code ships.
       - name: Apply D1 migrations (remote)
