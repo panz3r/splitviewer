@@ -81,6 +81,10 @@ vitest with the Cloudflare workers plugin. Tests live by layer in
   design source). After artwork changes run `node scripts/generate-icons.mjs`
   (regenerates the committed apple-touch PNG via `@cf-wasm/resvg`, already in
   the dependency tree). Favicon routes: `src/controllers/assets.tsx`.
+- **Fonts are self-hosted** (`assets/fonts/`, OFL licenses alongside): after
+  changing a WOFF2 file run `node scripts/generate-fonts.mjs` to regenerate
+  `src/ui/fontAssets.ts` (served at `/fonts/*`, `@font-face` in `APP_STYLE`).
+  Don't reintroduce a font CDN — it would leak visitor IPs and need CSP changes.
 - **Tests**: pin clocks explicitly in freshness/boundary assertions — never rely
   on the default wall clock. Never run two `npm test` instances at once (shared
   `.wrangler` state causes phantom failures). Migrations are auto-applied in

@@ -60,6 +60,28 @@ describe("src/index.tsx", () => {
 		expect(response.headers.get("Strict-Transport-Security")).toContain("max-age=");
 	});
 
+	it("self-hosts fonts: no third-party font CDN in pages or CSP", async () => {
+		const fetchPath = async (path: string) => {
+			const ctx = createExecutionContext();
+			const response = await worker.fetch(new IncomingRequest(`https://example.com${path}`), env, ctx);
+			await waitOnExecutionContext(ctx);
+			return response;
+		};
+		const home = await fetchPath("/");
+		const html = await home.text();
+		expect(html).not.toMatch(/fonts\.(googleapis|gstatic)\.com/);
+		expect(html).toContain("/fonts/lato-latin-400-normal.woff2");
+		expect(home.headers.get("Content-Security-Policy")).not.toContain("fonts.g");
+
+		const font = await fetchPath("/fonts/lato-latin-400-normal.woff2");
+		expect(font.status).toBe(200);
+		expect(font.headers.get("Content-Type")).toBe("font/woff2");
+		const magic = new TextDecoder().decode(new Uint8Array(await font.arrayBuffer()).slice(0, 4));
+		expect(magic).toBe("wOF2");
+
+		expect((await fetchPath("/fonts/constructor")).status).toBe(404);
+	});
+
 	it("serves the dashboard share script as a same-origin asset", async () => {
 		const request = new IncomingRequest("https://example.com/share.js");
 		const ctx = createExecutionContext();
