@@ -84,6 +84,7 @@ repositories/clients via parameters. Presentation never calls services.
   ships as a static asset (`/share.js`), never inline.
 - **Session revocation.** Sessions embed `users.session_version` (`sv` claim);
   `POST /auth/logout` bumps it, revoking every outstanding session for that user.
+  Everything behind `requireSession` is served `Cache-Control: private, no-store`.
 - **Tests by layer.** New service logic gets a *unit* test against the in-memory
   fakes (`test/fakes/`); HTTP behavior gets an *integration* test through the worker
   (`test/integration/`); D1/crypto guarantees stay in `test/infra/`.

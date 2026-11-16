@@ -85,6 +85,7 @@ describe("POST /api/shares/create (JSON)", () => {
       body: JSON.stringify({ groupId: "31111", groupName: "Flat 31111" }),
     });
     expect(res.status).toBe(201);
+    expect(res.headers.get("Cache-Control")).toBe("private, no-store");
     const body = (await res.json()) as { ok: boolean; slug: string; url: string };
     expect(body.ok).toBe(true);
     expect(body.slug).toMatch(/^[A-Za-z0-9_-]{16}$/);
@@ -264,6 +265,7 @@ describe("dashboard cards (M4)", () => {
       headers: { Cookie: await sessionCookie(user.id) },
     });
     expect(res.status).toBe(200);
+    expect(res.headers.get("Cache-Control")).toBe("private, no-store");
     const html = await res.text();
     expect(html).toContain("Splitwise connection expired");
     expect(html).not.toContain("data-copy");

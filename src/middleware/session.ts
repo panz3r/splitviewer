@@ -39,4 +39,6 @@ export async function requireSession(c: Context<AppEnv>, next: Next) {
   }
   c.set("user", row);
   await next();
+  // Authenticated responses are per-user: never let a browser or shared cache keep them.
+  c.res.headers.set("Cache-Control", "private, no-store");
 }
