@@ -64,17 +64,14 @@ export class D1SharesRepo implements SharesRepo {
   }
 
   async createOrRotate(input: CreateShareInput): Promise<void> {
-    await this.env.DB.batch([
-      this.env.DB.prepare(
-        `INSERT INTO shares (slug, user_id, splitwise_group_id, group_name)
-         VALUES (?1, ?2, ?3, ?4)
-         ON CONFLICT(user_id, splitwise_group_id) DO UPDATE SET
-           slug = ?1, group_name = ?4, is_active = 1`,
-      ).bind(input.slug, input.userId, input.splitwiseGroupId, input.groupName),
-      this.env.DB.prepare(
-        "SELECT slug, is_active FROM shares WHERE user_id = ?1 AND splitwise_group_id = ?2",
-      ).bind(input.userId, input.splitwiseGroupId),
-    ]);
+    await this.env.DB.prepare(
+      `INSERT INTO shares (slug, user_id, splitwise_group_id, group_name)
+       VALUES (?1, ?2, ?3, ?4)
+       ON CONFLICT(user_id, splitwise_group_id) DO UPDATE SET
+         slug = ?1, group_name = ?4, is_active = 1`,
+    )
+      .bind(input.slug, input.userId, input.splitwiseGroupId, input.groupName)
+      .run();
   }
 
   async deactivate(userId: string, slug: string): Promise<boolean> {
