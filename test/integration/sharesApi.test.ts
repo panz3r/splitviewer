@@ -82,7 +82,7 @@ describe("POST /api/shares/create (JSON)", () => {
         "Content-Type": "application/json",
         Cookie: await sessionCookie(user.id),
       },
-      body: JSON.stringify({ groupId: "grp-31111", groupName: "Flat 31111" }),
+      body: JSON.stringify({ groupId: "31111", groupName: "Flat 31111" }),
     });
     expect(res.status).toBe(201);
     const body = (await res.json()) as { ok: boolean; slug: string; url: string };
@@ -106,20 +106,20 @@ describe("POST /api/shares/create (JSON)", () => {
       await fetchRoute("/api/shares/create", {
         method: "POST",
         headers: { "Content-Type": "application/json", Cookie: cookie },
-        body: JSON.stringify({ groupId: "grp-31112", groupName: "Flat" }),
+        body: JSON.stringify({ groupId: "31112", groupName: "Flat" }),
       })
     ).json()) as { slug: string };
     const second = (await (
       await fetchRoute("/api/shares/create", {
         method: "POST",
         headers: { "Content-Type": "application/json", Cookie: cookie },
-        body: JSON.stringify({ groupId: "grp-31112", groupName: "Flat" }),
+        body: JSON.stringify({ groupId: "31112", groupName: "Flat" }),
       })
     ).json()) as { slug: string };
 
     expect(second.slug).not.toBe(first.slug);
     const rows = await env.DB.prepare(
-      "SELECT count(*) AS n FROM shares WHERE user_id = ?1 AND splitwise_group_id = 'grp-31112'",
+      "SELECT count(*) AS n FROM shares WHERE user_id = ?1 AND splitwise_group_id = '31112'",
     )
       .bind(user.id)
       .first<{ n: number }>();
@@ -135,6 +135,34 @@ describe("POST /api/shares/create (JSON)", () => {
     });
     expect(res.status).toBe(400);
   });
+
+  it("rejects non-numeric group ids and malformed revoke slugs with 400", async () => {
+    const cookie = await sessionCookie((await insertUser("31120")).id);
+    const post = (path: string, body: unknown) =>
+      fetchRoute(path, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Cookie: cookie },
+        body: JSON.stringify(body),
+      });
+    expect((await post("/api/shares/create", { groupId: "1/../2", groupName: "X" })).status).toBe(400);
+    expect((await post("/api/shares/create", { groupId: "1".repeat(21) })).status).toBe(400);
+    expect((await post("/api/shares/revoke", { slug: "../etc" })).status).toBe(400);
+  });
+
+  it("caps the stored group name length", async () => {
+    const user = await insertUser("31121");
+    const res = await fetchRoute("/api/shares/create", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Cookie: await sessionCookie(user.id) },
+      body: JSON.stringify({ groupId: 31121, groupName: "x".repeat(5000) }),
+    });
+    expect(res.status).toBe(201);
+    const { slug } = (await res.json()) as { slug: string };
+    const row = await env.DB.prepare("SELECT group_name FROM shares WHERE slug = ?1")
+      .bind(slug)
+      .first<{ group_name: string }>();
+    expect(row?.group_name).toHaveLength(200);
+  });
 });
 
 describe("POST /api/shares/revoke (JSON)", () => {
@@ -145,7 +173,7 @@ describe("POST /api/shares/revoke (JSON)", () => {
       await fetchRoute("/api/shares/create", {
         method: "POST",
         headers: cookie,
-        body: JSON.stringify({ groupId: "grp-31114", groupName: "Flat" }),
+        body: JSON.stringify({ groupId: "31114", groupName: "Flat" }),
       })
     ).json()) as { slug: string };
 
@@ -177,7 +205,7 @@ describe("POST /api/shares/revoke (JSON)", () => {
       await fetchRoute("/api/shares/create", {
         method: "POST",
         headers: { "Content-Type": "application/json", Cookie: await sessionCookie(owner.id) },
-        body: JSON.stringify({ groupId: "grp-31115", groupName: "Flat" }),
+        body: JSON.stringify({ groupId: "31115", groupName: "Flat" }),
       })
     ).json()) as { slug: string };
 
@@ -196,7 +224,7 @@ describe("form-encoded flow (dashboard buttons)", () => {
     const res = await fetchRoute("/api/shares/create", {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded", Cookie: await sessionCookie(user.id) },
-      body: new URLSearchParams({ groupId: "grp-31117", groupName: "Flat" }).toString(),
+      body: new URLSearchParams({ groupId: "31117", groupName: "Flat" }).toString(),
     });
     expect(res.status).toBe(303);
     expect(res.headers.get("Location")).toBe("/dashboard?msg=created");
@@ -209,7 +237,7 @@ describe("form-encoded flow (dashboard buttons)", () => {
       await fetchRoute("/api/shares/create", {
         method: "POST",
         headers: { "Content-Type": "application/json", Cookie: cookie },
-        body: JSON.stringify({ groupId: "grp-31118", groupName: "Flat" }),
+        body: JSON.stringify({ groupId: "31118", groupName: "Flat" }),
       })
     ).json()) as { slug: string };
 
