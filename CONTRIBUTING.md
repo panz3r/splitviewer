@@ -138,15 +138,24 @@ repositories/clients via parameters. Presentation never calls services.
   line. To bump betterleaks, update `BETTERLEAKS_VERSION` and
   `BETTERLEAKS_SHA256` in the workflow (Dependabot doesn't track it).
 - **Release** (`.github/workflows/release.yml`): pushing a tag `v*` runs the same
-  checks, then deploys to Cloudflare Workers **and records a `prod` deployment in
+  checks, applies pending D1 migrations to production
+  (`wrangler d1 migrations apply DB --remote`), then deploys to Cloudflare
+  Workers **and records a `prod` deployment in
   the repo's Deployments view**, plus publishes a **GitHub Release** with generated
   notes. Requires these **repository secrets**:
   | Secret | Value |
   |---|---|
-  | `CLOUDFLARE_API_TOKEN` | API token with Workers Scripts:Edit (+ D1:Edit); create at dash.cloudflare.com → My Profile → API Tokens |
+  | `CLOUDFLARE_API_TOKEN` | API token with Workers Scripts:Edit + D1:Edit (D1 for the migrations step); create at dash.cloudflare.com → My Profile → API Tokens |
   | `D1_DATABASE_ID` | the `database_id` of your production splitviewer D1 |
   | `SPLITWISE_CLIENT_ID` | your PROD Splitwise OAuth app's client id |
   | `CLOUDFLARE_ACCOUNT_ID` | *(optional)* needed only if the API token can access multiple accounts |
+
+  **Migrations must be backward compatible.** They run *before* the new code
+  ships, so the previous release keeps serving against the new schema for a
+  moment (and stays live if the deploy then fails). Only add tables/columns
+  (with defaults) or indexes; drop or rename in a later release, once no
+  deployed code uses the old shape. A failing migration aborts the release
+  before deploy.
 
   The worker's secrets (`TOKEN_ENCRYPTION_KEY`, `SESSION_SECRET`,
   `SPLITWISE_CLIENT_SECRET`) are **not** touched by deploys — set them once with

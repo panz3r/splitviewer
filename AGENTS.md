@@ -17,7 +17,8 @@ log is the changelog.
 - **`.github/workflows/`** — `ci.yml` (typecheck + tests on PRs/main, Dependabot
   auto-merge), `secrets.yml` (betterleaks history scan; local twin is
   `.githooks/pre-commit`, installed by `npm run hooks:install`), `release-prep.yml` (version bump → tag → pipeline), `release.yml`
-  (checks → Cloudflare deploy → GitHub Release → `prod` deployment record),
+  (checks → remote D1 migrations → Cloudflare deploy → GitHub Release → `prod`
+  deployment record; migrations must stay backward compatible with the live code),
   `verify-lockfile.yml` (GitHub Actions are SHA-locked; run `gh actions-lock`
   after adding/changing an action).
 
