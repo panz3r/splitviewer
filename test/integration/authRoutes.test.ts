@@ -8,6 +8,8 @@ import { signSession, verifyState, signState } from "../../src/domain/sessionSer
 // routes must not hit the network for the paths we assert here).
 const IncomingRequest = Request<unknown, IncomingRequestCfProperties>;
 
+const ORIGIN = "https://example.com";
+
 const fetchRoute = async (path: string, init?: RequestInit) => {
   const request = new IncomingRequest(`https://example.com${path}`, init);
   const ctx = createExecutionContext();
@@ -83,7 +85,7 @@ describe("/auth/logout", () => {
 	});
 
 	it("POST clears the session cookie and redirects home", async () => {
-		const res = await fetchRoute("/auth/logout", { method: "POST" });
+		const res = await fetchRoute("/auth/logout", { method: "POST", headers: { Origin: ORIGIN } });
 		expect(res.status).toBe(302);
 		expect(res.headers.get("Location")).toBe("/");
 		const cookie = res.headers.get("Set-Cookie") ?? "";
@@ -108,9 +110,18 @@ describe("/auth/logout", () => {
 			});
 
 		expect((await probe()).status).not.toBe(401);
-		const res = await fetchRoute("/auth/logout", { method: "POST", headers: { Cookie: cookie } });
+		const res = await fetchRoute("/auth/logout", { method: "POST", headers: { Cookie: cookie, Origin: ORIGIN } });
 		expect(res.status).toBe(302);
 		expect((await probe()).status).toBe(401);
+	});
+
+	it("POST from another origin is rejected (CSRF) and keeps the session", async () => {
+		const res = await fetchRoute("/auth/logout", {
+			method: "POST",
+			headers: { Origin: "https://evil.example", "Sec-Fetch-Site": "cross-site" },
+		});
+		expect(res.status).toBe(403);
+		expect(res.headers.get("Set-Cookie")).toBeNull();
 	});
 });
 

@@ -81,7 +81,8 @@ repositories/clients via parameters. Presentation never calls services.
   `curl -A "Twitterbot/1.0"`.
 - **Security headers.** Every response carries a CSP
   (`src/middleware/securityHeaders.ts`): same-origin scripts only, so client JS
-  ships as a static asset (`/share.js`), never inline.
+  ships as a static asset (`/share.js`), never inline. `hono/csrf` rejects
+  cross-origin form posts (tests posting forms must send a same-origin `Origin`).
 - **Session revocation.** Sessions embed `users.session_version` (`sv` claim);
   `POST /auth/logout` bumps it, revoking every outstanding session for that user.
   Everything behind `requireSession` is served `Cache-Control: private, no-store`.

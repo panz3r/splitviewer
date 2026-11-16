@@ -224,7 +224,11 @@ describe("form-encoded flow (dashboard buttons)", () => {
     const user = await insertUser("31117");
     const res = await fetchRoute("/api/shares/create", {
       method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded", Cookie: await sessionCookie(user.id) },
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        Cookie: await sessionCookie(user.id),
+        Origin: "https://example.com",
+      },
       body: new URLSearchParams({ groupId: "31117", groupName: "Flat" }).toString(),
     });
     expect(res.status).toBe(303);
@@ -247,6 +251,7 @@ describe("form-encoded flow (dashboard buttons)", () => {
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
         Cookie: cookie,
+        Origin: "https://example.com",
       },
       body: new URLSearchParams({ slug: created.slug }).toString(),
     });
