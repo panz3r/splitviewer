@@ -201,6 +201,8 @@ repositories/clients via parameters. Presentation never calls services.
   version fields** (`npm install --package-lock-only`), commits, tags, and
   triggers the release pipeline. Manual `git tag vX.Y.Z && git push origin vX.Y.Z`
   also works: the release workflow then syncs both files after deploying.
+  Don't "Run workflow" on **Release** itself from a branch — it refuses any
+  ref that isn't a `vX.Y.Z` tag.
   Optional: protect the `prod` environment (Settings → Environments → required reviewers)
   for a manual approval gate. `npm run deploy`
   stays available for manual deploys from a configured checkout.
