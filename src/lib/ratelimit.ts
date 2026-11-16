@@ -50,9 +50,13 @@ export function rateLimit(
   };
 }
 
-/** Client IP for bucketing (Cloudflare sets CF-Connecting-IP on real traffic). */
+/**
+ * Client IP for bucketing. Cloudflare always sets CF-Connecting-IP on real
+ * traffic; client-supplied headers like X-Forwarded-For are deliberately
+ * ignored (rotating them would mint a fresh bucket per request).
+ */
 function clientIp(c: Context): string {
-  return c.req.header("CF-Connecting-IP") ?? c.req.header("X-Forwarded-For") ?? "unknown";
+  return c.req.header("CF-Connecting-IP") ?? "unknown";
 }
 
 /**
