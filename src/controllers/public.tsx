@@ -4,8 +4,8 @@
 // Security posture: everything rendered comes from the sanitized snapshot;
 // revocation beats the cache; missing and revoked slugs render identically.
 import { Hono } from "hono";
-import { deleteCache } from "../lib/cache";
 import { repoUrl, resolvePublicViewForEnv } from "../wiring";
+import { D1CacheRepo } from "../repositories/cacheRepo";
 import { D1SharesRepo } from "../repositories/sharesRepo";
 import {
   PublicDashboard,
@@ -24,7 +24,7 @@ export const publicView = new Hono<AppEnv>()
     // the cache so a revoked share can never "flash" its snapshot again.
     const active = await new D1SharesRepo(c.env).isActive(slug);
     if (!active) {
-      await deleteCache(c.env, slug);
+      await new D1CacheRepo(c.env).delete(slug);
       return c.html(<PublicNotFoundPage origin={origin} repoUrl={repoUrl(c.env)} />, 404);
     }
 

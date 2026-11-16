@@ -3,7 +3,7 @@
 // of hono/jsx imports and of any app state: the card renders ONLY what's in
 // the sanitized snapshot.
 /** @jsxImportSource react */
-import type { SanitizedSnapshot } from "../lib/sanitize";
+import type { SanitizedSnapshot } from "../domain/sanitizeService";
 
 /**
  * Visual OG card shared by /p/:slug/og.png and /example-card.png.

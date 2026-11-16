@@ -1,4 +1,4 @@
-// JWT payload shapes for src/lib/session.ts; the index signature is required
+// JWT payload shapes for src/domain/sessionService.ts; the index signature is required
 // for compatibility with hono/jwt's JWTPayload type.
 export interface StatePayload {
   [key: string]: unknown;

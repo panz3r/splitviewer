@@ -25,7 +25,6 @@ import {
   fetchCurrentUser,
   SplitwiseAuthError,
 } from "../lib/splitwise";
-import { upsertUser } from "../lib/users";
 import type { AppEnv } from "../types";
 
 const PLACEHOLDER_CLIENT_ID = "REPLACE_ME_SPLITWISE_CLIENT_ID";
@@ -122,7 +121,7 @@ export const auth = new Hono<AppEnv>()
       encrypt(tokens.refreshToken, c.env.TOKEN_ENCRYPTION_KEY),
     ]);
 
-    const storedUserId = await upsertUser(c.env, {
+    const storedUserId = await new D1UsersRepo(c.env).upsert({
       splitwiseUserId: user.id,
       encryptedAccessToken: encAccess,
       encryptedRefreshToken: encRefresh,

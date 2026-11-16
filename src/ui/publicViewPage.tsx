@@ -2,7 +2,7 @@
 // currency, plus the 404/unavailable variants. All content comes from the
 // sanitized snapshot (privacy wall is upstream in domain/sanitizeService).
 import { PageShell } from "./components";
-import type { SanitizedSnapshot } from "../lib/sanitize";
+import type { SanitizedSnapshot } from "../domain/sanitizeService";
 
 const STYLE = `
   .cur { margin-top: 1.2rem; border: 1px solid var(--line); border-radius: var(--radius-card); padding: .2rem 1.1rem .8rem; background: var(--paper); box-shadow: var(--shadow); }

@@ -1,7 +1,7 @@
 // group_cache repository (MVC refactor phase 02.4): the ONLY module that
 // touches the `group_cache` table, plus the SWR freshness window (upstream
 // plan: ~7 min). Interface + D1 implementation + in-memory implementation.
-import type { SanitizedSnapshot } from "../lib/sanitize";
+import type { SanitizedSnapshot } from "../domain/sanitizeService";
 
 export const FRESH_WINDOW_SECONDS = 7 * 60;
 
