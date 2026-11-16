@@ -13,6 +13,7 @@ CLI is a local dependency).
 
 ```bash
 npm run setup-local   # .dev.vars with fresh keys + local D1 schema (idempotent)
+npm run hooks:install # pre-commit secret scan (needs betterleaks: brew install betterleaks)
 npm run dev           # http://localhost:8787
 npm test              # vitest with the Cloudflare Workers pool
 npx tsc -p tsconfig.json && npx tsc -p test/tsconfig.json
@@ -118,7 +119,8 @@ repositories/clients via parameters. Presentation never calls services.
 1. Fork / branch (`feat/...` or `fix/...`).
 2. Make the change; add or update tests; keep typecheck + tests green.
 3. Open a PR against `main` — GitHub Actions runs typecheck + tests on every PR
-   and on `main` (`.github/workflows/ci.yml`).
+   and on `main` (`.github/workflows/ci.yml`), plus a secret scan
+   (`.github/workflows/secrets.yml`).
 
 ## CI & release
 
@@ -126,6 +128,15 @@ repositories/clients via parameters. Presentation never calls services.
   typechecks + the full vitest suite. No secrets required — the workflow seeds
   `wrangler.jsonc` from the committed template and generates throwaway keys for
   `.dev.vars` (`bash scripts/setup-local.sh --yes`).
+- **Secret scan** (`.github/workflows/secrets.yml`): every PR and push to `main`
+  scans the full git history with [betterleaks](https://github.com/betterleaks/betterleaks)
+  (pinned release, SHA-256 verified, findings redacted in the log). The same
+  check runs locally on staged changes via the `.githooks/pre-commit` hook
+  (`npm run hooks:install` links it into `.git/hooks` without touching
+  `core.hooksPath`; the hook skips with a warning if betterleaks isn't
+  installed). For a false positive, add a `betterleaks:allow` comment on the
+  line. To bump betterleaks, update `BETTERLEAKS_VERSION` and
+  `BETTERLEAKS_SHA256` in the workflow (Dependabot doesn't track it).
 - **Release** (`.github/workflows/release.yml`): pushing a tag `v*` runs the same
   checks, then deploys to Cloudflare Workers **and records a `prod` deployment in
   the repo's Deployments view**, plus publishes a **GitHub Release** with generated

@@ -15,7 +15,8 @@ log is the changelog.
   privacy model, license (LGPL-3.0-only).
 - **`SUPPORT.md`** — user support, FAQ, report/takedown flow.
 - **`.github/workflows/`** — `ci.yml` (typecheck + tests on PRs/main, Dependabot
-  auto-merge), `release-prep.yml` (version bump → tag → pipeline), `release.yml`
+  auto-merge), `secrets.yml` (betterleaks history scan; local twin is
+  `.githooks/pre-commit`, installed by `npm run hooks:install`), `release-prep.yml` (version bump → tag → pipeline), `release.yml`
   (checks → Cloudflare deploy → GitHub Release → `prod` deployment record),
   `verify-lockfile.yml` (GitHub Actions are SHA-locked; run `gh actions-lock`
   after adding/changing an action).
