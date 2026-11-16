@@ -205,7 +205,6 @@ export interface RawGroup {
   coverUrl?: string;
   members: Array<{ id: string; firstName: string; lastName: string }>;
   simplifiedDebts: Array<{ from: string; to: string; amount: string; currencyCode: string }>;
-  raw?: unknown; // kept for debugging; never persisted/rendered
 }
 
 async function fetchGroup(
@@ -259,7 +258,6 @@ async function fetchGroup(
         amount: String(d.amount ?? ""),
         currencyCode: String(d.currency_code ?? ""),
       })),
-    raw: group,
   };
 }
 
