@@ -2,6 +2,7 @@
 
 Thanks for your interest in contributing! SplitViewer is a community tool for
 publishing read-only, privacy-first dashboards of Splitwise group debts.
+Participation is governed by our [Code of Conduct](CODE_OF_CONDUCT.md).
 
 > **Not affiliated with Splitwise** — we only use their public API. "Splitwise" is
 > a trademark of its respective owner.
