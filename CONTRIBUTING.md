@@ -199,7 +199,7 @@ repositories/clients via parameters. Presentation never calls services.
      client id deploys; users authorize again via the dashboard's reconnect flow.
 - To cut a release: run **Release prep** (Actions → Release prep → Run workflow,
   version without the `v` prefix) — it bumps `package.json` **and the lockfile's
-  version fields** (`npm install --package-lock-only`), commits, tags, and
+  version fields** (`npm install --package-lock-only --ignore-scripts`), commits, tags, and
   triggers the release pipeline. Manual `git tag vX.Y.Z && git push origin vX.Y.Z`
   also works: the release workflow then syncs both files after deploying.
   Don't "Run workflow" on **Release** itself from a branch — it refuses any
@@ -208,7 +208,8 @@ repositories/clients via parameters. Presentation never calls services.
   for a manual approval gate. `npm run deploy`
   stays available for manual deploys from a configured checkout.
 - Dependencies are kept current by **Dependabot** (`.github/dependabot.yml`,
-  weekly): npm minor+patch arrive grouped in one PR, majors and
+  weekly with a seven-day cooldown for version updates; security updates are
+  not delayed): npm minor+patch arrive grouped in one PR, majors and
   GitHub-Actions bumps individually — every PR is validated by CI. Watch the
   coupled pair `wrangler` + `@cloudflare/vitest-plugin` and the wasm modules
   (`@cf-wasm/*`) on major bumps. Dependabot PRs are **auto-merged with squash**
