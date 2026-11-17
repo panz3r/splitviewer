@@ -128,6 +128,12 @@ repositories/clients via parameters. Presentation never calls services.
   typechecks + the full vitest suite. No secrets required — the workflow seeds
   `wrangler.jsonc` from the committed template and generates throwaway keys for
   `.dev.vars` (`bash scripts/setup-local.sh --yes`).
+- **GitHub Actions Checks** (`.github/workflows/gh-actions-checks.yml`): PRs and
+  pushes to `main` that change `.github/**` verify the action dependency lockfile
+  and run [zizmor](https://docs.zizmor.sh/) on workflows and Dependabot configuration.
+  Findings fail the zizmor job and appear as annotations, without requiring
+  Advanced Security. It can also be run manually. Don't make these path-filtered
+  jobs required checks without handling skipped runs, which can remain pending.
 - **Secret scan** (`.github/workflows/secrets.yml`): every PR and push to `main`
   scans the full git history with [betterleaks](https://github.com/betterleaks/betterleaks)
   (pinned release, SHA-256 verified, findings redacted in the log). The same
