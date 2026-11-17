@@ -12,6 +12,8 @@ updates:
           - "minor"
           - "patch"
     open-pull-requests-limit: 5
+    cooldown:
+      default-days: 7
 
   # GitHub Actions used by ci/release/prep workflows
   - package-ecosystem: github-actions
@@ -19,3 +21,5 @@ updates:
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
+    cooldown:
+      default-days: 7
