@@ -83,23 +83,27 @@ jobs:
         run: npm ci --ignore-scripts
 
       # wrangler.jsonc is gitignored by design — rebuild it for CI from the
-      # committed template + repository secrets (deployment-specific values).
+      # committed template + prod environment variables (deployment-specific values).
       # REPO_URL is injected from the GitHub repository itself, so forks get
       # in-app report links pointing at their own issue tracker.
-      - name: Build wrangler.jsonc from secrets
+      - name: Build wrangler.jsonc from environment configuration
         env:
-          D1_DATABASE_ID: ${{ secrets.D1_DATABASE_ID }}
-          SPLITWISE_CLIENT_ID: ${{ secrets.SPLITWISE_CLIENT_ID }}
+          D1_DATABASE_ID: ${{ vars.D1_DATABASE_ID }}
+          SPLITWISE_CLIENT_ID: ${{ vars.SPLITWISE_CLIENT_ID }}
           REPO_URL: ${{ github.server_url }}/${{ github.repository }}
         run: |
+          if [ -z "$D1_DATABASE_ID" ] || [ -z "$SPLITWISE_CLIENT_ID" ]; then
+            echo "::error::D1_DATABASE_ID and SPLITWISE_CLIENT_ID must be set as prod environment variables"
+            exit 1
+          fi
           sed -e "s/REPLACE_ME_DATABASE_ID/${D1_DATABASE_ID}/" \
               -e "s/REPLACE_ME_SPLITWISE_CLIENT_ID/${SPLITWISE_CLIENT_ID}/" \
               -e "s|https://github.com/panz3r/splitviewer|${REPO_URL}|" \
               wrangler.example.jsonc > wrangler.jsonc
-          grep -q REPLACE_ME wrangler.jsonc && {
-            echo "::error::D1_DATABASE_ID and SPLITWISE_CLIENT_ID secrets must be set"
+          if grep -q REPLACE_ME wrangler.jsonc; then
+            echo "::error::wrangler.jsonc contains unresolved configuration placeholders"
             exit 1
-          } || true
+          fi
 
       # Open a prod deployment record (shows under the repo's Deployments view,
       # tied to the tag) and flip its status after the deploy finishes.
