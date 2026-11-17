@@ -1,0 +1,49 @@
+# Verifies locked action dependencies and audits GitHub configuration.
+
+name: GitHub Actions Checks
+
+on:
+  pull_request:
+    paths:
+      - ".github/**"
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: github-actions-checks-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify-lockfile:
+    name: Verify GitHub Actions Lockfile
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - run: gh extension install github/gh-actions-lock --pin v0.4.1
+      - run: gh actions-lock --verify
+
+  zizmor-security-analysis:
+    name: Security Analysis with zizmor
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: zizmorcore/zizmor-action@v0.8.1
+        with:
+          version: 1.32.0
+          inputs: .github
+          advanced-security: false
+          annotations: true
