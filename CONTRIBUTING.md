@@ -142,13 +142,13 @@ repositories/clients via parameters. Presentation never calls services.
   (`wrangler d1 migrations apply DB --remote`), then deploys to Cloudflare
   Workers **and records a `prod` deployment in
   the repo's Deployments view**, plus publishes a **GitHub Release** with generated
-  notes. Requires these **repository secrets**:
-  | Secret | Value |
-  |---|---|
-  | `CLOUDFLARE_API_TOKEN` | API token with Workers Scripts:Edit + D1:Edit (D1 for the migrations step); create at dash.cloudflare.com → My Profile → API Tokens |
-  | `D1_DATABASE_ID` | the `database_id` of your production splitviewer D1 |
-  | `SPLITWISE_CLIENT_ID` | your PROD Splitwise OAuth app's client id |
-  | `CLOUDFLARE_ACCOUNT_ID` | *(optional)* needed only if the API token can access multiple accounts |
+  notes. Requires this configuration in the **`prod` environment**:
+  | Name | Type | Value |
+  |---|---|---|
+  | `CLOUDFLARE_API_TOKEN` | Secret | API token with Workers Scripts:Edit + D1:Edit (D1 for the migrations step); create at dash.cloudflare.com → My Profile → API Tokens |
+  | `D1_DATABASE_ID` | Variable | the `database_id` of your production splitviewer D1 |
+  | `SPLITWISE_CLIENT_ID` | Variable | your PROD Splitwise OAuth app's client id |
+  | `CLOUDFLARE_ACCOUNT_ID` | Secret | *(optional)* needed only if the API token can access multiple accounts |
 
   **Migrations must be backward compatible.** They run *before* the new code
   ships, so the previous release keeps serving against the new schema for a
@@ -171,15 +171,16 @@ repositories/clients via parameters. Presentation never calls services.
   `SPLITWISE_CLIENT_SECRET`) are **not** touched by deploys — set them once with
   `wrangler secret put` (see README).
 
-  **Setting the repository secrets** — either in the web UI
-  (*Settings → Secrets and variables → Actions → New repository secret*) or with
-  the GitHub CLI:
+  **Setting the environment configuration** — either in the web UI
+  (*Settings → Environments → prod → Environment secrets / Environment variables*)
+  or with the GitHub CLI. Keep deployment configuration scoped to `prod`, not
+  duplicated at repository level. Variables are not masked in workflow logs.
 
   ```bash
-  gh secret set CLOUDFLARE_API_TOKEN    # paste the API token
-  gh secret set D1_DATABASE_ID          # paste the database_id
-  gh secret set SPLITWISE_CLIENT_ID     # paste the PROD app's client id
-  gh secret set CLOUDFLARE_ACCOUNT_ID   # optional — only for multi-account tokens
+  gh secret set CLOUDFLARE_API_TOKEN --env prod   # paste the API token
+  gh variable set D1_DATABASE_ID --env prod       # paste the database_id
+  gh variable set SPLITWISE_CLIENT_ID --env prod  # paste the PROD app's client id
+  gh secret set CLOUDFLARE_ACCOUNT_ID --env prod  # optional — only for multi-account tokens
   ```
 
   Also enable **Settings → Actions → General → "Allow GitHub Actions to create
@@ -189,7 +190,7 @@ repositories/clients via parameters. Presentation never calls services.
   hard way:
   1. the new app's registered callback must be exactly
      `https://<your-worker-domain>/auth/callback`;
-  2. update the `SPLITWISE_CLIENT_ID` **repository secret** above (the release
+  2. update the `SPLITWISE_CLIENT_ID` **`prod` environment variable** above (the release
      pipeline injects it at deploy time);
   3. re-apply the new secret to the worker:
      `printf '%s' 'NEW_SECRET' | npx wrangler secret put SPLITWISE_CLIENT_SECRET`
