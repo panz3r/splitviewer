@@ -136,11 +136,12 @@ repositories/clients via parameters. Presentation never calls services.
   the job by themselves. It can also be run manually. Don't make these path-filtered
   jobs required checks without handling skipped runs, which can remain pending.
 - **Code scanning & rulesets**: CodeQL default setup (actions +
-  JavaScript/TypeScript) runs on PRs and `main`; a ruleset blocks merging PRs
-  with CodeQL errors or high+ security alerts. Other rulesets block deleting or
-  force-pushing `main` and deleting or moving `v*` tags. Don't require PRs or
-  restrict tag creation: release prep pushes its bump commit to `main` and
-  creates the tag with `GITHUB_TOKEN`.
+  JavaScript/TypeScript) runs on PRs and `main`; alerts appear in the Security
+  tab. Rulesets block deleting or force-pushing `main` and deleting or moving
+  `v*` tags. Don't require PRs, status checks, or code scanning results on
+  `main`, or restrict tag creation: these rules also apply to direct pushes,
+  and release prep pushes its unchecked bump commit to `main` and creates the
+  tag with `GITHUB_TOKEN` (a code-scanning ruleset blocked the v0.2.12 release).
 - **Secret scan** (`.github/workflows/secrets.yml`): every PR and push to `main`
   scans the full git history with [betterleaks](https://github.com/betterleaks/betterleaks)
   (pinned release, SHA-256 verified, findings redacted in the log). The same
