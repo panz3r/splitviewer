@@ -11,8 +11,13 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: release
+  cancel-in-progress: false
+
 jobs:
   checks:
+    name: Pre-release Checks
     runs-on: ubuntu-latest
     steps:
       # Everything below (release name, `gh release create`, deployment ref,
@@ -36,7 +41,7 @@ jobs:
       - uses: actions/setup-node@v7.1.0
         with:
           node-version: 24
-          cache: npm
+          package-manager-cache: false
 
       - name: Install dependencies
         run: npm ci
@@ -56,6 +61,7 @@ jobs:
         run: npm test
 
   deploy:
+    name: Deploy to Production
     needs: checks
     runs-on: ubuntu-latest
     # The `prod` environment powers the repo's Environments/Deployments UI and
@@ -74,7 +80,7 @@ jobs:
       - uses: actions/setup-node@v7.1.0
         with:
           node-version: 24
-          cache: npm
+          package-manager-cache: false
 
       # --ignore-scripts: dependency lifecycle scripts never run in the job
       # that holds the Cloudflare token and a write-scoped GITHUB_TOKEN (the
@@ -151,26 +157,31 @@ jobs:
       - name: Mark prod deployment successful
         if: success()
         uses: actions/github-script@v9.0.0
+        env:
+          DEPLOYMENT_ID: ${{ steps.deployment.outputs.id }}
+          DEPLOYMENT_URL: ${{ steps.deployment.outputs.url }}
         with:
           script: |
             await github.rest.repos.createDeploymentStatus({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              deployment_id: parseInt("${{ steps.deployment.outputs.id }}", 10),
+              deployment_id: parseInt(process.env.DEPLOYMENT_ID, 10),
               state: "success",
-              environment_url: "${{ steps.deployment.outputs.url }}",
+              environment_url: process.env.DEPLOYMENT_URL,
               description: "Deployed from CI",
             });
 
       - name: Mark prod deployment failed
         if: failure()
         uses: actions/github-script@v9.0.0
+        env:
+          DEPLOYMENT_ID: ${{ steps.deployment.outputs.id }}
         with:
           script: |
             await github.rest.repos.createDeploymentStatus({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              deployment_id: parseInt("${{ steps.deployment.outputs.id }}", 10),
+              deployment_id: parseInt(process.env.DEPLOYMENT_ID, 10),
               state: "failure",
               description: "Deploy failed in CI",
             });

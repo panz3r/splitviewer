@@ -128,6 +128,19 @@ repositories/clients via parameters. Presentation never calls services.
   typechecks + the full vitest suite. No secrets required — the workflow seeds
   `wrangler.jsonc` from the committed template and generates throwaway keys for
   `.dev.vars` (`bash scripts/setup-local.sh --yes`).
+- **GitHub Actions Checks** (`.github/workflows/gh-actions-checks.yml`): PRs and
+  pushes to `main` that change `.github/**` verify the action dependency lockfile,
+  lint workflows with [actionlint](https://github.com/rhysd/actionlint), and run
+  [zizmor](https://docs.zizmor.sh/) on workflows and Dependabot configuration.
+  zizmor findings are uploaded to code scanning (Security tab) and do not fail
+  the job by themselves. It can also be run manually. Don't make these path-filtered
+  jobs required checks without handling skipped runs, which can remain pending.
+- **Code scanning & rulesets**: CodeQL default setup (actions +
+  JavaScript/TypeScript) runs on PRs and `main`; a ruleset blocks merging PRs
+  with CodeQL errors or high+ security alerts. Other rulesets block deleting or
+  force-pushing `main` and deleting or moving `v*` tags. Don't require PRs or
+  restrict tag creation: release prep pushes its bump commit to `main` and
+  creates the tag with `GITHUB_TOKEN`.
 - **Secret scan** (`.github/workflows/secrets.yml`): every PR and push to `main`
   scans the full git history with [betterleaks](https://github.com/betterleaks/betterleaks)
   (pinned release, SHA-256 verified, findings redacted in the log). The same
@@ -199,7 +212,7 @@ repositories/clients via parameters. Presentation never calls services.
      client id deploys; users authorize again via the dashboard's reconnect flow.
 - To cut a release: run **Release prep** (Actions → Release prep → Run workflow,
   version without the `v` prefix) — it bumps `package.json` **and the lockfile's
-  version fields** (`npm install --package-lock-only`), commits, tags, and
+  version fields** (`npm install --package-lock-only --ignore-scripts`), commits, tags, and
   triggers the release pipeline. Manual `git tag vX.Y.Z && git push origin vX.Y.Z`
   also works: the release workflow then syncs both files after deploying.
   Don't "Run workflow" on **Release** itself from a branch — it refuses any
@@ -208,7 +221,8 @@ repositories/clients via parameters. Presentation never calls services.
   for a manual approval gate. `npm run deploy`
   stays available for manual deploys from a configured checkout.
 - Dependencies are kept current by **Dependabot** (`.github/dependabot.yml`,
-  weekly): npm minor+patch arrive grouped in one PR, majors and
+  weekly with a seven-day cooldown for version updates; security updates are
+  not delayed): npm minor+patch arrive grouped in one PR, majors and
   GitHub-Actions bumps individually — every PR is validated by CI. Watch the
   coupled pair `wrangler` + `@cloudflare/vitest-plugin` and the wasm modules
   (`@cf-wasm/*`) on major bumps. Dependabot PRs are **auto-merged with squash**

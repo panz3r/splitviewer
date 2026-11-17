@@ -15,6 +15,7 @@ concurrency:
 
 jobs:
   checks:
+    name: CI Checks
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7.0.1
@@ -53,8 +54,9 @@ jobs:
   # minors and all majors stay for manual review — anything merged here ships
   # on the next release without a human looking at it.
   automerge:
+    name: Auto-merge Dependabot PRs
     needs: checks
-    if: github.actor == 'dependabot[bot]'
+    if: github.event.pull_request.user.login == 'dependabot[bot]' && github.repository == github.event.pull_request.head.repo.full_name
     runs-on: ubuntu-latest
     permissions:
       contents: write # merge the PR
