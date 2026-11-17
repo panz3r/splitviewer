@@ -132,8 +132,8 @@ repositories/clients via parameters. Presentation never calls services.
   pushes to `main` that change `.github/**` verify the action dependency lockfile,
   lint workflows with [actionlint](https://github.com/rhysd/actionlint), and run
   [zizmor](https://docs.zizmor.sh/) on workflows and Dependabot configuration.
-  Findings fail the zizmor job and appear as annotations, without requiring
-  Advanced Security. It can also be run manually. Don't make these path-filtered
+  zizmor findings are uploaded to code scanning (Security tab) and do not fail
+  the job by themselves. It can also be run manually. Don't make these path-filtered
   jobs required checks without handling skipped runs, which can remain pending.
 - **Secret scan** (`.github/workflows/secrets.yml`): every PR and push to `main`
   scans the full git history with [betterleaks](https://github.com/betterleaks/betterleaks)

@@ -48,6 +48,9 @@ jobs:
   zizmor-security-analysis:
     name: Security Analysis with zizmor
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write # Uploads SARIF results to code scanning.
     steps:
       - uses: actions/checkout@v7.0.1
         with:
@@ -57,5 +60,3 @@ jobs:
         with:
           version: 1.32.0
           inputs: .github
-          advanced-security: false
-          annotations: true
