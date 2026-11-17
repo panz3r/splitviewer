@@ -19,8 +19,9 @@ log is the changelog.
   `.githooks/pre-commit`, installed by `npm run hooks:install`), `release-prep.yml` (version bump → tag → pipeline), `release.yml`
   (checks → remote D1 migrations → Cloudflare deploy → GitHub Release → `prod`
   deployment record; migrations must stay backward compatible with the live code),
-  `verify-lockfile.yml` (GitHub Actions are SHA-locked; run `gh actions-lock`
-  after adding/changing an action).
+  `gh-actions-checks.yml` (actions lockfile verification, actionlint, zizmor;
+  GitHub Actions are SHA-locked; run `gh actions-lock` after adding/changing an
+  action).
 
 ## Stack
 
