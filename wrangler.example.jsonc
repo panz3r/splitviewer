@@ -6,6 +6,12 @@
   "compatibility_flags": [
     "nodejs_compat"
   ],
+  "observability": {
+    "logs": {
+      "enabled": true,
+      "invocation_logs": true
+    }
+  },
   "vars": {
     // Your PROD Splitwise OAuth app's client id (its callback URL must be
     // https://<your-worker-domain>/auth/callback).
