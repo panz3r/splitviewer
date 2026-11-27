@@ -41,16 +41,16 @@
   "dependencies": {
     "@cf-wasm/og": "^0.5.0",
     "@cf-wasm/resvg": "^0.4.0",
-    "hono": "^4.13.18",
+    "hono": "^4.13.19",
     "nanoid": "^6.0.2",
     "react": "^19.3.1"
   },
   "devDependencies": {
-    "@cloudflare/vitest-plugin": "^1.8.1",
+    "@cloudflare/vitest-plugin": "^1.8.5",
     "@types/node": "^26.6.6",
     "@types/react": "^19.3.0",
     "typescript": "^7.0.2",
-    "vitest": "^5.1.0",
+    "vitest": "^5.1.1",
     "wrangler": "^4.110.0"
   }
 }
